@@ -4444,3 +4444,10 @@ button:disabled {
 .dr-mode[aria-checked='true'] .dr-mode-t {
   color: var(--text);
 }
+
+/* Поле ввода внутри составной рамки: кольцо фокуса у рамки, как у главного поля запроса */
+.follow-form:focus-within,
+.pbz-composer:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
