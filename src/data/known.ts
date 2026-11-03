@@ -12,6 +12,8 @@ export const norm = (s: string) =>
     .trim();
 
 export const PMID_RE = /(?:pmid|пмид)\s*[:№#]?\s*(\d{5,9})/i;
+/** Ссылка на запись в PubMed: pubmed.ncbi.nlm.nih.gov/12345678 (с «https://», без него, с хвостом пути). */
+export const PUBMED_URL_RE = /pubmed\.ncbi\.nlm\.nih\.gov\/(\d{5,9})(?![\d])/i;
 export const DOI_RE = /\b(10\.\d{4,9}\/\S+)/i;
 const AUTHOR_YEAR = /^\s*([A-Z][A-Za-z-]{2,})(?:\s+(?:et\s+al\.?|и\s+соавт\.?))?[,\s]+((?:19|20)\d{2})\s*$/;
 
@@ -50,9 +52,21 @@ export function findByTitle(text: string): { pub: Pub; sc: Scenario } | null {
   return null;
 }
 
+/** Все идентификаторы в запросе, без повторов: «PMID 1 и PMID 2», «PMID 1, 2», ссылки PubMed, DOI. Порядок — как в тексте. */
+export function knownIds(raw: string): string[] {
+  const out: { at: number; id: string }[] = [];
+  const push = (at: number, id: string) => { if (!out.some((o) => o.id === id)) out.push({ at, id }); };
+  for (const m of raw.matchAll(/(?:pmid|пмид)\s*[:№#]?\s*(\d{5,9}(?:\s*(?:,|;|и|and|или|\/)\s*(?:(?:pmid|пмид)\s*[:№#]?\s*)?\d{5,9})*)/gi)) {
+    for (const n of m[1].matchAll(/\d{5,9}/g)) push((m.index ?? 0) + (n.index ?? 0), `PMID ${n[0]}`);
+  }
+  for (const m of raw.matchAll(/pubmed\.ncbi\.nlm\.nih\.gov\/(\d{5,9})(?![\d])/gi)) push(m.index ?? 0, `PMID ${m[1]}`);
+  for (const m of raw.matchAll(/\b(10\.\d{4,9}\/\S+)/gi)) push(m.index ?? 0, `DOI ${m[1].replace(/[.,;)»"]+$/, '')}`);
+  return out.sort((a, b) => a.at - b.at).map((o) => o.id);
+}
+
 export function resolveKnown(raw: string): KnownHit | null {
   const text = raw.trim();
-  const pm = text.match(PMID_RE)?.[1] ?? (/^\s*\d{7,9}\s*$/.test(text) ? text : null);
+  const pm = text.match(PMID_RE)?.[1] ?? text.match(PUBMED_URL_RE)?.[1] ?? (/^\s*\d{7,9}\s*$/.test(text) ? text : null);
   const doiRaw = text.match(DOI_RE)?.[1]?.replace(/[.,;)»"]+$/, '');
   const pubs = allPubs();
 

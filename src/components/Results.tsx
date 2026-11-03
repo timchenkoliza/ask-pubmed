@@ -248,12 +248,21 @@ export function Results({ state, dispatch, sc, params, response, layout, touch, 
         >
           <ShakeHint show={!state.hintSeen && canShake(intent) && response.items.length > 0} onUse={onHintUse} onClose={() => dispatch({ t: 'hint-seen' })} />
         </ResultHead>
-        {state.plan?.quotesUnavailable && intent === 'explore' && (
+        {state.plan?.quotesUnavailable && (intent === 'explore' || intent === 'compare' || intent === 'synthesis') && (
           <aside className="notice notice--info" data-notice="quotes-unavailable" aria-label="Про цитаты">
             <Info size={20} aria-hidden />
             <div className="notice-body">
               <p className="notice-t">Цитат по этой теме нет</p>
               <p className="notice-s">Показываем публикации. Чтобы найти фрагмент в одной статье, укажите её PMID, DOI или название</p>
+            </div>
+          </aside>
+        )}
+        {state.plan?.compareUnavailable && intent === 'explore' && !state.plan.quotesUnavailable && (
+          <aside className="notice notice--info" data-notice="compare-unavailable" aria-label="Про сравнение">
+            <Info size={20} aria-hidden />
+            <div className="notice-body">
+              <p className="notice-t">Сравнения по этой теме нет</p>
+              <p className="notice-s">Показываем публикации. Сравнение двух подходов в прототипе есть только для диеногеста и комбинированных оральных контрацептивов при эндометриозе</p>
             </div>
           </aside>
         )}

@@ -38,9 +38,11 @@ export function MorphTitle({ text, lang, animated }: { text: string; lang: Lang 
   if (!animated || !lang) return <span lang={ru ? 'ru' : 'en'}>{text}</span>;
   const words = text.split(' ');
   return (
-    <span lang={ru ? 'ru' : 'en'} key={lang} aria-label={text}>
+    <span lang={ru ? 'ru' : 'en'} key={lang}>
+      {/* Слова остаются обычным текстом: диктор читает заголовок как есть, текст выделяется и копируется без дублей.
+          aria-label на span без роли запрещён, поэтому второй копии заголовка для диктора нет. */}
       {words.map((w, i) => (
-        <span key={i} aria-hidden>
+        <span key={i}>
           <motion.span
             style={{ display: 'inline-block' }}
             initial={{ opacity: 0, filter: 'blur(6px)', y: 5 }}

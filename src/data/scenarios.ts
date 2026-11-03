@@ -112,7 +112,7 @@ const cardio: Scenario = {
     P('sr', 2025, true, 'Diagnostic criteria for iron deficiency in heart failure: a systematic review', 'Диагностические критерии дефицита железа при сердечной недостаточности: систематический обзор', 'Meridian Journal of Cardiology', 'Serum ferritin and transferrin saturation were the markers most often used to define iron deficiency.', 'We reviewed studies that defined iron deficiency in adults with heart failure and compared the markers, thresholds and clinical settings used. Definitions varied between studies.', ['Heart Failure', 'Iron Deficiencies', 'Biomarkers'], { pmid: '99000101', doi: '10.5555/askpubmed.cardio.1', authors: ['Aldous R', 'Brenner T', 'Calloway S'] }),
     P('ma', 2024, true, 'Iron deficiency definitions and clinical outcomes in heart failure: a meta-analysis', 'Определения дефицита железа и клинические исходы при сердечной недостаточности: метаанализ', 'Northgate Clinical Reviews', 'Studies differed in the thresholds used to define iron deficiency.', 'This meta-analysis pooled studies that reported clinical outcomes by iron status in patients with heart failure and recorded how iron deficiency was defined in each.', ['Heart Failure', 'Iron Deficiencies', 'Meta-Analysis as Topic']),
     P('rct', 2023, 'publisher-link', 'Intravenous iron in iron-deficient patients with heart failure: a randomized controlled trial', 'Внутривенное железо у пациентов с сердечной недостаточностью и дефицитом железа: рандомизированное контролируемое исследование', 'Halden Medical Reports', null, 'Patients with heart failure and iron deficiency were randomly assigned to intravenous iron or control. Enrolment criteria are described in the methods.', ['Heart Failure', 'Iron Deficiencies', 'Randomized Controlled Trial'], { pmid: '99000103', doi: '10.5555/askpubmed.cardio.3' }),
-    P('sr', 2022, false, 'Iron deficiency definitions in heart failure with reduced and preserved ejection fraction: a systematic review', 'Определения дефицита железа при сердечной недостаточности со сниженной и сохранённой фракцией выброса: систематический обзор', 'Lowmoor Evidence Synthesis', 'Definitions were compared between reduced and preserved ejection fraction populations.', 'We compared how iron deficiency was defined in studies of heart failure with reduced and with preserved ejection fraction.', ['Heart Failure', 'Iron Deficiencies', 'Stroke Volume'], { pmid: '99000104' }),
+    P('sr', 2022, false, 'Iron deficiency definitions in heart failure with reduced and preserved ejection fraction: a systematic review', 'Определения дефицита железа при сердечной недостаточности со сниженной и сохранённой фракцией выброса: систематический обзор', 'Lowmoor Evidence Synthesis', 'We compared how iron deficiency was defined in studies of heart failure with reduced and with preserved ejection fraction.', 'We compared how iron deficiency was defined in studies of heart failure with reduced and with preserved ejection fraction.', ['Heart Failure', 'Iron Deficiencies', 'Stroke Volume'], { pmid: '99000104' }),
     P('ma', 2022, true, 'Ferritin and transferrin saturation thresholds in heart failure trials: a meta-analysis', 'Пороги ферритина и насыщения трансферрина в исследованиях при сердечной недостаточности: метаанализ', 'Corvale Heart Journal', 'Trials applied ferritin and transferrin saturation thresholds in different combinations.', 'We pooled trials in heart failure and extracted the ferritin and transferrin saturation thresholds used for enrolment.', ['Ferritins', 'Transferrin', 'Heart Failure']),
     P('rct', 2021, true, 'Screening for iron deficiency in outpatients with heart failure: a randomized controlled trial', 'Скрининг дефицита железа у амбулаторных пациентов с сердечной недостаточностью: рандомизированное контролируемое исследование', 'Brightwater Internal Medicine', 'Screening used the same laboratory markers in both study arms.', 'Outpatients with heart failure were randomized to a screening strategy for iron deficiency or usual care.', ['Heart Failure', 'Iron Deficiencies', 'Outpatients']),
     P('sr', 2021, 'metadata-only', 'Prevalence and definitions of iron deficiency in heart failure: a systematic review', 'Распространённость и определения дефицита железа при сердечной недостаточности: систематический обзор', 'Meridian Journal of Cardiology', null, '', ['Heart Failure', 'Iron Deficiencies', 'Prevalence'], { pmid: '99000107' }),
@@ -184,7 +184,7 @@ const gp: Scenario = {
     P('sr', 2024, true, 'Glasgow-Blatchford Score for early discharge in upper gastrointestinal bleeding: a systematic review', 'Шкала Глазго — Блэтчфорда для ранней выписки при кровотечении из верхних отделов ЖКТ: систематический обзор', 'Northgate Clinical Reviews', 'The review recorded the score threshold used to define low risk in each study.', 'A systematic review of studies that used the Glasgow-Blatchford Score to select patients for early discharge.', ['Gastrointestinal Hemorrhage', 'Patient Discharge', 'Risk Assessment', 'Treatment Outcome'], { mentionsGBS: true }),
     P('cohort', 2024, true, 'Safety of outpatient care after upper gastrointestinal bleeding: a large multicentre cohort study', 'Безопасность амбулаторной помощи после кровотечения из верхних отделов ЖКТ: крупное многоцентровое когортное исследование', 'Halden Medical Reports', 'Outcomes included mortality, rebleeding and return visits.', 'A multicentre cohort of patients with upper gastrointestinal bleeding managed as outpatients and followed for adverse outcomes.', ['Gastrointestinal Hemorrhage', 'Ambulatory Care', 'Cohort Studies'], { mentionsGBS: true }),
     P('ma', 2023, 'pmc-embargoed', 'Rebleeding and mortality after early discharge in upper gastrointestinal bleeding: a meta-analysis', 'Повторное кровотечение и смертность после ранней выписки при кровотечении из верхних отделов ЖКТ: метаанализ', 'Lowmoor Evidence Synthesis', null, 'A meta-analysis of rebleeding and mortality after early discharge, with the Glasgow-Blatchford Score reported in the included studies.', ['Gastrointestinal Hemorrhage', 'Mortality', 'Patient Discharge'], { mentionsGBS: true, pmid: '99000204' }),
-    P('sr', 2023, 'publisher-link', 'Risk scores for outpatient management of upper gastrointestinal bleeding: a systematic review', 'Шкалы риска для амбулаторного ведения кровотечения из верхних отделов ЖКТ: систематический обзор', 'Corvale Gastroenterology Journal', 'Several risk scores were compared, including the Glasgow-Blatchford Score.', 'This review compared risk scores proposed for selecting outpatient care in upper gastrointestinal bleeding.', ['Gastrointestinal Hemorrhage', 'Risk Assessment'], { mentionsGBS: true }),
+    P('sr', 2023, 'publisher-link', 'Risk scores for outpatient management of upper gastrointestinal bleeding: a systematic review', 'Шкалы риска для амбулаторного ведения кровотечения из верхних отделов ЖКТ: систематический обзор', 'Corvale Gastroenterology Journal', 'Several risk scores were compared, including the Glasgow-Blatchford Score.', 'This review compared risk scores proposed for selecting outpatient care in upper gastrointestinal bleeding. Several risk scores were compared, including the Glasgow-Blatchford Score.', ['Gastrointestinal Hemorrhage', 'Risk Assessment'], { mentionsGBS: true }),
     P('cohort', 2022, true, 'Thirty-day outcomes after emergency department discharge with upper gastrointestinal bleeding: a population-based cohort', 'Тридцатидневные исходы после выписки из приёмного отделения с кровотечением из верхних отделов ЖКТ: популяционная когорта', 'Brightwater Gastroenterology Review', 'Thirty-day mortality and return visits were reported separately.', 'A population-based cohort of patients discharged from the emergency department with upper gastrointestinal bleeding.', ['Gastrointestinal Hemorrhage', 'Emergency Service, Hospital', 'Patient Discharge', 'Treatment Outcome'], { mentionsGBS: true }),
     P('ma', 2021, true, 'Hospital admission versus outpatient care in upper gastrointestinal bleeding: a meta-analysis', 'Госпитализация и амбулаторная помощь при кровотечении из верхних отделов ЖКТ: метаанализ', 'Northgate Clinical Reviews', null, 'A meta-analysis comparing hospital admission with outpatient care.', ['Gastrointestinal Hemorrhage', 'Hospitalization'], { mentionsGBS: false }),
     P('sr', 2020, false, 'Management pathways for upper gastrointestinal bleeding: a systematic review', 'Маршруты ведения пациентов с кровотечением из верхних отделов ЖКТ: систематический обзор', 'Halden Medical Reports', null, 'A review of clinical pathways for upper gastrointestinal bleeding.', ['Gastrointestinal Hemorrhage', 'Critical Pathways'], { mentionsGBS: false }),
@@ -701,16 +701,101 @@ export const CLASSIC: Fixture[] = [
   { id: 'ob', label: 'Акушер-гинеколог: исходный запрос', scenario: 'ob', query: ob.query },
 ];
 
-/** Подбор сценария по свободному тексту. null: запрос не распознан. */
+/* ───────────── Распознавание темы ─────────────
+   У каждой темы прототипа есть «ядро» (слова, которые однозначно называют тему: СИОЗС, GBS, диеногест, ОРВИ) и «контекст»
+   (слова, которые только подсказывают тему: беременность, кровотечение, у детей, контрацептивы).
+   Одно ядро или один контекст — тема найдена. Две темы сразу («кровотечение при беременности», «ОРВИ у беременных»,
+   «железо при беременности») — это не повод выбирать одну из них молча: на стыке тем публикаций в прототипе нет,
+   и запрос уходит в честное «две темы сразу», а не в чужую выдачу. */
+
+const T_IRON = /желез|ферритин|(?<![a-z])iron(?![a-z])/;
+const T_HF = /сердеч|(?<![а-яё])хсн(?![а-яё])|(?<![а-яё])сн(?![а-яё])|недостаточн\S*\s+сердц|heart\s+(?:failure|disease)|cardiac/;
+/* «Щитовидная железа» — не дефицит железа. */
+const GLAND = /(?:щитовидн|поджелудочн|предстательн|надпочечн|молочн|слюнн|паращитовидн|вилочков)\S*\s+желез\S*/g;
+
+const TOPIC_RX: Record<Exclude<ScenarioId, 'cardio'>, { core: RegExp; ctx?: RegExp }> = {
+  gp: { core: /жкт|gbs|блэтч|верхн\S*\s+отдел|желудочно|gastrointestinal|(?<![a-z])gi(?![a-z])/, ctx: /кровотеч|bleed|h(?:a)?emorrhag/ },
+  peds: { core: /орви|педиатр|(?<![a-z])arvi(?![a-z])|p(?:a)?ediatric|respiratory\s+(?:viral\s+)?infection/, ctx: /у\s+детей|in\s+children/ },
+  ob: { core: /сиозс|(?<![a-z])ssris?(?![a-z])/, ctx: /беремен|плод|новорожд|pregnan|fetal|fetus|neonat/ },
+  endo: { core: /эндометриоз|диеногест|endometriosis|dienogest/, ctx: /контрацептив|(?<![а-яё])кок(?![а-яё])|contracepti/ },
+};
+
+/** Как тема называется в сообщении «в запросе сразу несколько тем». */
+export const TOPIC_NAME: Record<ScenarioId, string> = {
+  cardio: 'железо и сердечная недостаточность',
+  gp: 'кровотечения из ЖКТ',
+  peds: 'ОРВИ у детей',
+  ob: 'СИОЗС и беременность',
+  endo: 'эндометриоз и контрацептивы',
+};
+
+export interface TopicRead {
+  /** Единственная найденная тема. */
+  id: ScenarioId | null;
+  /** В запросе больше одной темы: какие именно (слова запроса, а не названия сценариев). */
+  collision?: { ids: ScenarioId[]; names: string[] };
+}
+
+const ORDER: ScenarioId[] = ['cardio', 'gp', 'peds', 'ob', 'endo'];
+
+/** Как назвать найденное в запросе в сообщении «сразу несколько тем»: по словам запроса, а не по названию сценария. */
+function foundName(id: ScenarioId, t: string, isCore: boolean, foreignIron: boolean): string {
+  switch (id) {
+    case 'cardio':
+      return isCore ? 'железо и сердечная недостаточность' : foreignIron ? 'дефицит железа' : 'сердечная недостаточность';
+    case 'gp':
+      return isCore ? (/gbs|блэтч/.test(t) ? 'шкала GBS' : 'ЖКТ') : 'кровотечение';
+    case 'peds':
+      return isCore ? 'ОРВИ' : 'дети';
+    case 'ob':
+      return isCore ? 'СИОЗС' : /новорожд|плод|fetal|fetus|neonat/.test(t) && !/беремен|pregnan/.test(t) ? 'плод и новорождённый' : 'беременность';
+    case 'endo':
+      return isCore ? (/диеногест|dienogest/.test(t) ? 'диеногест' : 'эндометриоз') : 'контрацептивы';
+  }
+}
+
+export function readTopics(text: string): TopicRead {
+  const t = text.toLowerCase().replace(/ё/g, 'е');
+  for (const s of SCENARIOS) if (t.trim() === s.query.toLowerCase().replace(/ё/g, 'е').trim()) return { id: s.id };
+
+  const core = new Set<ScenarioId>();
+  const ctx = new Set<ScenarioId>();
+  const iron = T_IRON.test(t.replace(GLAND, ' '));
+  const hf = T_HF.test(t);
+  if (iron && hf) core.add('cardio');
+  /* Железо отдельно от сердца и сердце отдельно от железа: темы кардиолога нет, но это другая тема запроса. */
+  let foreign = false;
+  if (!core.has('cardio') && (iron || hf)) {
+    foreign = true;
+    ctx.add('cardio');
+  }
+  for (const id of Object.keys(TOPIC_RX) as (keyof typeof TOPIC_RX)[]) {
+    if (TOPIC_RX[id].core.test(t)) core.add(id);
+    else if (TOPIC_RX[id].ctx?.test(t)) ctx.add(id);
+  }
+  const named = (id: ScenarioId) => foundName(id, t, core.has(id), iron && !hf);
+  const clash = (ids: ScenarioId[]) => ({ id: null, collision: { ids, names: ids.map(named) } });
+
+  /* Ядро одной темы побеждает, если рядом нет другой темы, которая меняет вопрос.
+     СИОЗС вместе с кровотечением — вопрос про СИОЗС. ОРВИ у беременных — уже два вопроса. */
+  const cores = ORDER.filter((id) => core.has(id));
+  if (cores.length === 1) {
+    const w = cores[0];
+    const rest = ORDER.filter((id) => ctx.has(id) && id !== w).filter((id) => !(w === 'ob' && (id === 'gp' || (id === 'peds' && ctx.has('ob')))));
+    return rest.length ? clash([w, ...rest]) : { id: w };
+  }
+  if (cores.length > 1) return clash(cores);
+
+  const ctxs = ORDER.filter((id) => ctx.has(id));
+  if (ctxs.length > 1) return clash(ctxs);
+  /* Одна «чужая» тема (железо без сердца, сердце без железа) сценария не даёт: показывать другую выдачу вместо неё нельзя. */
+  if (ctxs.length === 1) return foreign ? { id: null } : { id: ctxs[0] };
+  return { id: null };
+}
+
+/** Подбор сценария по свободному тексту. null: запрос не распознан или в нём больше одной темы (см. `readTopics`). */
 export function matchQuery(text: string): ScenarioId | null {
-  const t = text.toLowerCase();
-  for (const s of SCENARIOS) if (t.trim() === s.query.toLowerCase().trim()) return s.id;
-  if (/эндометриоз|диеногест|контрацептив/.test(t)) return 'endo';
-  if (/железодефицит|желез/.test(t) && /сердеч|хсн|недостаточн/.test(t)) return 'cardio';
-  if (/жкт|кровотеч|gbs|блэтч/.test(t)) return 'gp';
-  if (/орви|клиническ\S*\s+рекомендац|у\s+детей|педиатр/.test(t)) return 'peds';
-  if (/сиозс|беремен|плод|новорожд/.test(t)) return 'ob';
-  return null;
+  return readTopics(text).id;
 }
 
 export const cloneParams = (p: Params): Params => ({

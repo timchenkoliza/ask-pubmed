@@ -1,6 +1,7 @@
 import type { ExploreView, Grouping, Job, QueryPlan, ResultIntent, ScenarioId, SortMode, StudyType } from './types';
-import { SCENARIO_MAP, matchQuery } from './scenarios';
-import { resolveKnown } from './known';
+import { SCENARIO_MAP, matchQuery, readTopics } from './scenarios';
+import { knownIds, resolveKnown } from './known';
+import { negatedAt } from './negate';
 import { termsFor } from './terms';
 
 /* Маршрутизатор задачи врача.
@@ -15,6 +16,8 @@ import { termsFor } from './terms';
 
 const QUOTE = /цитат|точн\S*\s+(?:формулировк|фраз|слов)|(?:найд\S*|покаж\S*)\s+(?:мест[оа]|где)\s|где\s+(?:это\s+)?(?:написано|сказано)/i;
 const FIND_HERE = /в\s+(?:этой|данной)\s+статье|(?<![а-яё])где\s+(?:авторы|в\s+тексте|именно|это|написано|сказано|упомина\S*|определя\S*|описыва\S*)|покаж\S*[^.?!]{0,24}(?<![а-яё])где(?![а-яё])|найд\S*\s+(?:в\s+тексте|цитат|фраз|формулировк|упоминани)|точн\S*\s+(?:цитат|формулировк|фраз)|цитат/i;
+/** Явная просьба сравнить (без «против»: «вакцины против гриппа» — не сравнение). */
+const COMPARE_ASK = /сравн[иея]\S*|что\s+лучше|чем\s+отличает|(?<![а-яё])(?:vs|versus)(?![а-яё])/i;
 const COMPARE = /сравн[иея]\S*|сопостав[иь]\S*\s+(?:эффект|подход|препарат|лечени)|что\s+лучше|чем\s+отличает|\bvs\b|\bversus\b|(?<![а-яё])против(?![а-яё])/i;
 const SYNTH = /что\s+(?:из\s+[^?.;]{0,70}?)?(?:следует|известно)|какие\s+(?:общие\s+)?выводы|подытожь|обобщи|сделай\s+(?:краткий\s+)?(?:вывод|обзор)|сравни\S*\s+результат|сопостав\S*\s+результат|обзор\s+литератур|краткий\s+обзор/i;
 const GROUPED = /в\s+приоритете|приоритет|сгруппир|разложи\s+по|по\s+типам?\s+исследовани|по\s+годам|по\s+полн\S*\s+текст|по\s+темам/i;
@@ -27,11 +30,21 @@ const TYPE_RE: [StudyType, RegExp][] = [
   ['cohort', /когортн/i],
 ];
 
+/** Первое вхождение типа без отрицания перед ним: «в приоритете метаанализы, без РКИ» не делает РКИ приоритетными. */
+function positiveAt(clause: string, re: RegExp): number {
+  for (const m of clause.matchAll(new RegExp(re.source, 'gi'))) {
+    /* Шаблон может захватить пробел перед словом: отрицание проверяем от самого слова. */
+    const at = (m.index ?? 0) + (m[0].length - m[0].trimStart().length);
+    if (!negatedAt(clause, at)) return at;
+  }
+  return -1;
+}
+
 function priorityTypes(t: string): StudyType[] {
   const i = t.search(/приоритет/);
   if (i < 0) return [];
   const clause = t.slice(i).split(/[;.?!]/)[0];
-  return TYPE_RE.map(([k, re]) => ({ k, at: clause.search(re) }))
+  return TYPE_RE.map(([k, re]) => ({ k, at: positiveAt(clause, re) }))
     .filter((x) => x.at >= 0)
     .sort((a, b) => a.at - b.at)
     .map((x) => x.k);
@@ -77,6 +90,10 @@ export function route(text: string): QueryPlan {
   const raw = text.trim();
   const t = raw.toLowerCase();
 
+  /* 0. Несколько идентификаторов: за один раз открывается одна публикация, молча выбирать первую нельзя. */
+  const ids = knownIds(raw);
+  if (ids.length >= 2) return { job: 'clarification-required', intent: 'clarify', scenarioId: null, manyIds: ids };
+
   /* 1. Известная публикация. */
   const k = resolveKnown(raw);
   if (k) {
@@ -89,7 +106,10 @@ export function route(text: string): QueryPlan {
     return { job: 'known-publication', intent: 'single-publication', scenarioId, known: k.ref };
   }
 
-  const scenarioId = matchQuery(raw);
+  /* Две темы сразу: публикаций на их стыке в прототипе нет, и чужую выдачу показывать нельзя. */
+  const topics = readTopics(raw);
+  if (topics.collision) return { job: 'clarification-required', intent: 'clarify', scenarioId: null, collision: topics.collision };
+  const scenarioId = topics.id;
   const sc = scenarioId ? SCENARIO_MAP[scenarioId] : null;
 
   /* 2. Цитаты из найденных публикаций. */
@@ -97,19 +117,22 @@ export function route(text: string): QueryPlan {
     return { job: 'find-in-text', intent: 'find-in-text', scenarioId, find: { scope: 'corpus', terms: [] } };
   }
 
+  /* Цитат просили, а фрагментов для этой темы нет: что бы дальше ни выбралось (сравнение, вывод, список), молча терять просьбу нельзя. */
+  const noQuotes = QUOTE.test(t) && !!sc && !sc.quotesConcept;
+
   /* 3. Сравнение двух объектов. */
   if (sc?.entities && sc.compareIds) {
     const found = sc.entities.filter((e) => e.pattern.test(raw));
     const [a, b] = sc.compareIds;
     const both = found.some((e) => e.id === a) && found.some((e) => e.id === b);
     const between = /(?:диеногест\S*|кок)\s+или\s+/i.test(raw);
-    if (both && (COMPARE.test(t) || between)) return { job: 'comparison-search', intent: 'compare', scenarioId };
+    if (both && (COMPARE.test(t) || between)) return { job: 'comparison-search', intent: 'compare', scenarioId, ...(noQuotes && { quotesUnavailable: true }) };
   }
 
   /* 4. Вывод или обзор. */
   if (SYNTH.test(t) && sc) {
     const drMode = /обзор/.test(t) ? 'review' : /сравн|сопостав/.test(t) ? 'compare' : 'conclusion';
-    return { job: 'synthesis-request', intent: 'synthesis', scenarioId, drMode };
+    return { job: 'synthesis-request', intent: 'synthesis', scenarioId, drMode, ...(noQuotes && { quotesUnavailable: true }) };
   }
 
   /* 5. Поиск литературы; пожелания к виду и порядку. */
@@ -121,7 +144,8 @@ export function route(text: string): QueryPlan {
     if (priority.length) plan.priority = priority;
   }
   if (NEWEST.test(t)) plan.sort = 'newest' as SortMode;
-  /* Цитаты просили, а фрагментов для этой темы нет: выдача обычная, но молча подменять задачу нельзя. */
-  if (QUOTE.test(t) && sc && !sc.quotesConcept) plan.quotesUnavailable = true;
+  if (noQuotes) plan.quotesUnavailable = true;
+  /* Сравнение просили, а сравнить в прототипе можно только диеногест и КОК: выдача обычная, но задачу не подменяем молча. */
+  if (COMPARE_ASK.test(t) && sc) plan.compareUnavailable = true;
   return plan;
 }

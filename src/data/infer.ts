@@ -1,6 +1,7 @@
 import type { ConstraintKind, Params, QueryPlan, Scenario, StudyType } from './types';
 import { NOW_YEAR, cloneParams } from './scenarios';
 import { addLexicon, stems } from './terms';
+import { negatedAt } from './negate';
 
 /* Разбор свободного текста в параметры поиска.
    Для исходных запросов сценариев параметры берутся из сценария без изменений.
@@ -110,9 +111,19 @@ export function inferParams(text: string, sc: Scenario, plan?: QueryPlan): Param
   ];
   /* «Сделай краткий обзор литературы» — это задача, а не тип исследования. */
   const tt = t.replace(/(?:сделай\s+)?(?:краткий\s+)?обзор\S*\s+литератур\S*|сделай\s+(?:краткий\s+)?обзор\S*|краткий\s+обзор\S*/g, (m) => ' '.repeat(m.length));
+  /* «Без РКИ», «кроме обзоров»: тип исключается, а не включается. Тип, названный и с отрицанием, и без, остаётся включённым. */
+  const excluded = new Set<StudyType>();
   for (const [type, re] of TYPES) {
-    const m = tt.match(word(re));
-    if (m && m.index !== undefined) found.push({ type, kind: kindAt(tt, m.index + (m[0].length - m[0].trimStart().length)) });
+    let positive: RegExpMatchArray | null = null;
+    let negative = false;
+    for (const m of tt.matchAll(new RegExp(word(re).source, 'gi'))) {
+      const at = (m.index ?? 0) + (m[0].length - m[0].trimStart().length);
+      if (negatedAt(tt, at)) negative = true;
+      else if (!positive) positive = m;
+    }
+    if (positive && positive.index !== undefined) {
+      found.push({ type, kind: kindAt(tt, positive.index + (positive[0].length - positive[0].trimStart().length)) });
+    } else if (negative) excluded.add(type);
   }
   if (found.length) {
     const wanted = found.filter((f) => f.kind === 'PREFERRED').map((f) => f.type);
@@ -129,6 +140,13 @@ export function inferParams(text: string, sc: Scenario, plan?: QueryPlan): Param
       p.preferTypes = wanted;
       if (wanted.length) p.types = [...new Set([...must, ...wanted])];
     }
+  }
+
+  if (excluded.size) {
+    const rest = p.types.filter((x) => !excluded.has(x));
+    /* Исключили всё, что разрешал сценарий: остаются остальные типы, а не пустой список. */
+    p.types = rest.length ? rest : (['sr', 'ma', 'rct', 'cohort'] as StudyType[]).filter((x) => !excluded.has(x));
+    p.preferTypes = p.preferTypes.filter((x) => !excluded.has(x));
   }
 
   const per = parsePeriod(t);

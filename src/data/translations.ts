@@ -27,7 +27,7 @@ export const TRANSLATIONS: Record<string, PubText> = {
   },
   'Iron deficiency definitions in heart failure with reduced and preserved ejection fraction: a systematic review': {
     abstract: 'Мы сравнили, как определяли дефицит железа в исследованиях сердечной недостаточности со сниженной и с сохранённой фракцией выброса.',
-    fragment: 'Определения сравнивали между популяциями со сниженной и сохранённой фракцией выброса.',
+    fragment: 'Мы сравнили, как определяли дефицит железа в исследованиях сердечной недостаточности со сниженной и с сохранённой фракцией выброса.',
   },
   'Ferritin and transferrin saturation thresholds in heart failure trials: a meta-analysis': {
     abstract: 'Мы объединили исследования при сердечной недостаточности и извлекли пороговые значения ферритина и насыщения трансферрина, которые использовали при включении пациентов.',
@@ -71,7 +71,7 @@ export const TRANSLATIONS: Record<string, PubText> = {
     abstract: 'Метаанализ повторных кровотечений и смертности после ранней выписки; во включённых исследованиях указана шкала Глазго — Блэтчфорда.',
   },
   'Risk scores for outpatient management of upper gastrointestinal bleeding: a systematic review': {
-    abstract: 'В обзоре сравнили шкалы риска, предложенные для отбора пациентов на амбулаторную помощь при кровотечении из верхних отделов ЖКТ.',
+    abstract: 'В обзоре сравнили шкалы риска, предложенные для отбора пациентов на амбулаторную помощь при кровотечении из верхних отделов ЖКТ. Сравнили несколько шкал риска, в том числе шкалу Глазго — Блэтчфорда.',
     fragment: 'Сравнили несколько шкал риска, в том числе шкалу Глазго — Блэтчфорда.',
   },
   'Thirty-day outcomes after emergency department discharge with upper gastrointestinal bleeding: a population-based cohort': {
