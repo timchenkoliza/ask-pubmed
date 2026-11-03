@@ -55,5 +55,8 @@ export function payloadOf(s: State, sc: Scenario, params: Params, response: Sear
     selectedPmids: picked,
     currentCorpusPmids: corpus,
     mode,
+    job: s.plan?.job ?? 'literature-search',
+    resultState: response.state,
+    pubmedQuery: response.queries[response.lead ?? 'exact'],
   };
 }

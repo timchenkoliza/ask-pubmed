@@ -82,7 +82,7 @@ function titleFor(intent: ResultIntent, sc: Scenario, params: Params, original: 
 
 /* ─── Подпись над списком ─── */
 
-function Notice({ response, dispatch }: { response: SearchResponse; dispatch: Dispatch<Action> }) {
+function Notice({ response, dispatch, tail }: { response: SearchResponse; dispatch: Dispatch<Action>; tail: boolean }) {
   const tiers = { exact: 0, broad: 0, fallback: 0 };
   response.items.forEach((p) => (tiers[response.prov[p.id]?.tier ?? 'exact'] += 1));
   const rest = tiers.broad + tiers.fallback;
@@ -92,7 +92,7 @@ function Notice({ response, dispatch }: { response: SearchResponse; dispatch: Di
       <aside className="notice notice--broad" data-notice="broadened" aria-label="Как получена выдача">
         <Info size={20} aria-hidden />
         <div className="notice-body">
-          <p className="notice-t">По точной формулировке ничего не нашли. Показываем результаты расширенного поиска.</p>
+          <p className="notice-t">По точной формулировке ничего не нашли. Показываем результаты по более широким терминам.</p>
           {response.widened.length > 0 && (
             <ul className="notice-l">
               {response.widened.slice(0, 3).map((w) => (
@@ -113,16 +113,17 @@ function Notice({ response, dispatch }: { response: SearchResponse; dispatch: Di
         <Info size={20} aria-hidden />
         <div className="notice-body">
           <p className="notice-t">
-            Точный и расширенный поиск ничего не нашли. Показываем результаты запасного поиска
-            {response.dropped.length > 0 && (
+            По всем условиям ничего не нашли. Показываем результаты
+            {response.dropped.length > 0 ? (
               <>
                 {' '}без {response.dropped.length > 1 ? 'желательных условий' : 'желательного условия'} {response.dropped.map((d) => `«${d.label.replace(/^В приоритете:\s*/, '')}»`).join(', ')}
               </>
+            ) : (
+              ' по обязательным условиям'
             )}
             .
-
           </p>
-          <p className="notice-s">Обязательные условия остались на месте. Проверено тестовым запросом: без желательного условия публикации нашлись.</p>
+          <p className="notice-s">Обязательные условия остались на месте</p>
           <button className="link-btn" onClick={() => dispatch({ t: 'open-sheet' })}>
             Что изменилось в запросе
           </button>
@@ -130,11 +131,11 @@ function Notice({ response, dispatch }: { response: SearchResponse; dispatch: Di
       </aside>
     );
   }
-  if (response.state === 'exact-results' && tiers.exact > 0 && rest > 0) {
+  if (tail && response.state === 'exact-results' && tiers.exact > 0 && rest > 0) {
     return (
       <p className="notice-tail" data-notice="tail">
         <Info size={16} aria-hidden /> Первые {tiers.exact} подходят под все условия запроса. Ещё {rest}{' '}
-        {tiers.broad > 0 && tiers.fallback > 0 ? 'найдены расширенным и запасным поиском' : tiers.broad > 0 ? 'найдены расширенным поиском' : 'подходят под обязательные условия, но не под все пожелания'} и стоят ниже
+        {tiers.broad > 0 && tiers.fallback > 0 ? 'найдены по более широким терминам или подходят не под все пожелания' : tiers.broad > 0 ? 'найдены по более широким терминам' : 'подходят под обязательные условия, но не под все пожелания'} и стоят ниже
       </p>
     );
   }
@@ -247,7 +248,16 @@ export function Results({ state, dispatch, sc, params, response, layout, touch, 
         >
           <ShakeHint show={!state.hintSeen && canShake(intent) && response.items.length > 0} onUse={onHintUse} onClose={() => dispatch({ t: 'hint-seen' })} />
         </ResultHead>
-        <Notice response={response} dispatch={dispatch} />
+        {state.plan?.quotesUnavailable && intent === 'explore' && (
+          <aside className="notice notice--info" data-notice="quotes-unavailable" aria-label="Про цитаты">
+            <Info size={20} aria-hidden />
+            <div className="notice-body">
+              <p className="notice-t">Цитат по этой теме нет</p>
+              <p className="notice-s">Показываем публикации. Чтобы найти фрагмент в одной статье, укажите её PMID, DOI или название</p>
+            </div>
+          </aside>
+        )}
+        <Notice response={response} dispatch={dispatch} tail={intent === 'explore' && view !== 'grouped' && state.sort === 'relevance'} />
         {showSort && <SortBar sort={state.sort} count={response.items.length} tiered={new Set(response.items.map((p) => response.prov[p.id]?.tier ?? 'exact')).size > 1} dispatch={dispatch} />}
         <div className={busy ? 'board-wrap is-busy' : 'board-wrap'}>{board}</div>
       </LayoutGroup>

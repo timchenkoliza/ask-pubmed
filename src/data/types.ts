@@ -288,6 +288,8 @@ export interface QueryPlan {
   sort?: SortMode;
   known?: KnownRef;
   find?: FindSpec;
+  /** Врач просил цитаты по найденным публикациям, но для этой темы в данных прототипа нет извлечённых фрагментов: показываем обычную выдачу и говорим об этом. */
+  quotesUnavailable?: boolean;
   /** Какой режим передачи в Deep Research подходит формулировке. */
   drMode?: 'review' | 'compare' | 'conclusion';
 }
@@ -401,4 +403,10 @@ export interface DeepResearchPayload {
   /** Весь текущий корпус выдачи. */
   currentCorpusPmids: string[];
   mode: 'review' | 'compare' | 'conclusion';
+  /** Задача врача, с которой собран корпус. */
+  job: Job;
+  /** Как получен корпус: точный, расширенный или запасной поиск, и чем закончился. */
+  resultState: SearchResponse['state'];
+  /** Запрос PubMed, по которому получен корпус. */
+  pubmedQuery: string;
 }

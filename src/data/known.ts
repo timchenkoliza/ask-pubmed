@@ -25,10 +25,29 @@ export interface KnownHit {
 
 const allPubs = () => SCENARIOS.flatMap((sc) => sc.pool.map((pub) => ({ pub, sc })));
 
+const hasCyrillic = (s: string) => /[а-яё]/i.test(s);
+
+/** Похоже ли на название статьи из PubMed: латиница, много слов, как правило с двоеточием или скобками. Короткий набор слов — это тематический запрос. */
+export function looksLikeTitle(text: string): boolean {
+  const t = text.trim().replace(/^[«"“]|[»"”]$/g, '');
+  if (hasCyrillic(t) || /[?]$/.test(t)) return false;
+  const words = t.split(/\s+/).filter(Boolean);
+  if (words.length < 8 || t.length < 40) return false;
+  return /[:(]/.test(t) || words.length >= 10;
+}
+
 export function findByTitle(text: string): { pub: Pub; sc: Scenario } | null {
   const n = norm(text);
   if (n.length < 12) return null;
-  return allPubs().find(({ pub }) => norm(pub.title) === n || norm(pub.titleRu) === n) ?? null;
+  const pubs = allPubs();
+  const exact = pubs.find(({ pub }) => norm(pub.title) === n || norm(pub.titleRu) === n);
+  if (exact) return exact;
+  /* Начало или часть английского названия: врач копирует его не целиком. Русскую фразу так не ищем — это тематический запрос. */
+  if (!hasCyrillic(text) && n.length >= 24 && n.split(' ').length >= 5) {
+    const part = pubs.filter(({ pub }) => norm(pub.title).includes(n));
+    if (part.length === 1) return part[0];
+  }
+  return null;
 }
 
 export function resolveKnown(raw: string): KnownHit | null {
@@ -49,8 +68,9 @@ export function resolveKnown(raw: string): KnownHit | null {
   const exact = findByTitle(text);
   if (exact) return { ref: { by: 'title', value: exact.pub.title, pubId: exact.pub.id }, ...exact };
   /* Название в кавычках внутри более длинной фразы: «в статье «…» найди …». */
-  for (const m of text.matchAll(/[«"“]([^»"”]{20,})[»"”]/g)) {
-    const inner = findByTitle(m[1]);
+  const quoted = [...text.matchAll(/[«"“]([^»"”]{20,})[»"”]/g)].map((m) => m[1].trim());
+  for (const q of quoted) {
+    const inner = findByTitle(q);
     if (inner) return { ref: { by: 'title', value: inner.pub.title, pubId: inner.pub.id }, ...inner };
   }
 
@@ -61,6 +81,9 @@ export function resolveKnown(raw: string): KnownHit | null {
     const hit = pubs.find(({ pub }) => pub.year === year && pub.authors?.[0]?.split(' ')[0].toLowerCase() === sur);
     if (hit) return { ref: { by: 'author-year', value: `${ay[1]} ${year}`, pubId: hit.pub.id }, ...hit };
   }
+  /* Название, которого нет в данных: честно говорим «не нашли», а не подбираем похожую тему. */
+  const missing = quoted.find(looksLikeTitle) ?? (looksLikeTitle(text) ? text.trim().replace(/^[«"“]|[»"”]$/g, '') : null);
+  if (missing) return { ref: { by: 'title', value: missing }, notFound: missing };
   return null;
 }
 
@@ -72,6 +95,7 @@ export function knownQuery(ref: KnownRef, pub?: Pub): string {
   if (!pub) {
     if (ref.by === 'pmid') return `${ref.value.replace(/\D/g, '')}[pmid]`;
     if (ref.by === 'doi') return `"${ref.value.replace(/^DOI\s*/, '')}"[AID]`;
+    if (ref.by === 'title') return `"${ref.value}"[Title]`;
     return ref.value;
   }
   if (ref.by === 'pmid' && pub.pmid) return `${pub.pmid}[pmid]`;

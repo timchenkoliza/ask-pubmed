@@ -1,5 +1,5 @@
 import type { ConstraintKind, Params, QueryPlan, Scenario, StudyType } from './types';
-import { cloneParams } from './scenarios';
+import { NOW_YEAR, cloneParams } from './scenarios';
 import { addLexicon, stems } from './terms';
 
 /* Разбор свободного текста в параметры поиска.
@@ -11,7 +11,7 @@ const word = (re: string) => new RegExp(`(?:^|[^а-яёa-z])(?:${re})(?![а-яё
 
 const PREFER = /желательно|предпочтительно|в\s+приоритете|приоритетн\S*|лучше\s+всего|лучше|хотелось\s+бы|по\s+возможности/gi;
 const REQUIRE = /только|обязательно|строго|исключительно|непременно|должн\S*/gi;
-const CONSTRAINT_WORD = /мета-?анализ|обзор|рки|рандомизированн|когортн|за\s+(?:последни\S*\s+)?\d+|за\s+последни\S*\s+год|полн\S*\s+текст/i;
+const CONSTRAINT_WORD = /мета-?анализ|обзор|рки|рандомизированн|когортн|за\s+(?:последни\S*\s+)?\d+|за\s+последни\S*\s+год|последни\S*\s+\d+|не\s+старше|с\s+(?:19|20)\d\d|полн\S*\s+текст/i;
 
 /** Вес условия, которое начинается в тексте с позиции `at`: смотрим на слово перед ним в пределах одной части фразы. */
 export function kindAt(t: string, at: number): 'REQUIRED' | 'PREFERRED' {
@@ -28,6 +28,60 @@ export function kindAt(t: string, at: number): 'REQUIRED' | 'PREFERRED' {
   /* Другое условие между словом-весом и этим условием: вес относится к тому, что ближе к нему. */
   if (CONSTRAINT_WORD.test(win.slice(last.end))) return 'REQUIRED';
   return last.kind;
+}
+
+/* Срок публикаций. Прототип считает его в годах назад от текущего года: «за 3 года», «три года», «последние 2 года»,
+   «не старше 3 лет» (если рядом нет слов о пациентах: «дети не старше 3 лет» — это возраст, а не срок публикаций),
+   «с 2022 года», «после 2021». Точный год или диапазон («за 2024 год», «2020–2022») считается от начала: до сегодняшнего дня. */
+const MAX_YEARS = 30;
+const WORDS: Record<string, number> = {
+  один: 1, одного: 1, два: 2, две: 2, три: 3, трех: 3, четыре: 4, четырех: 4, пять: 5, пяти: 5, шесть: 6, шести: 6,
+  семь: 7, семи: 7, восемь: 8, восьми: 8, девять: 9, девяти: 9, десять: 10, десяти: 10, пятнадцать: 15, пятнадцати: 15, двадцать: 20, двадцати: 20,
+};
+const NUM = `(\\d{1,2}|${Object.keys(WORDS).join('|')})`;
+const YEARS = `\\s*(?:год|лет)`;
+const LEAD = '(^|[^а-яеa-z0-9])';
+const AGE_WORD = /дет|ребен|ребён|младен|новорожд|пациент|больн|возраст|взросл|подрост|женщин|мужчин|пожил|людей/;
+const clampYears = (n: number) => Math.min(MAX_YEARS, Math.max(1, n));
+const numOf = (s: string) => (/^\d/.test(s) ? Number(s) : WORDS[s]);
+const sinceYear = (y: number) => (y >= 1990 && y <= NOW_YEAR ? clampYears(NOW_YEAR - y) : null);
+
+export function parsePeriod(text: string): { period: number | null; at: number } | null {
+  const t = text.replace(/ё/g, 'е');
+  if (/любой\s+период|без\s+ограничени\S*\s+по\s+времени/.test(t)) return { period: null, at: 0 };
+  const at = (m: RegExpMatchArray) => (m.index ?? 0) + m[1].length;
+
+  let m = t.match(new RegExp(`${LEAD}(?:за|в\\s+течение)\\s+(?:последни\\S*\\s+)?${NUM}${YEARS}`));
+  if (m) return { period: clampYears(numOf(m[2])), at: at(m) };
+  m = t.match(new RegExp(`${LEAD}последни\\S*\\s+${NUM}${YEARS}`));
+  if (m) return { period: clampYears(numOf(m[2])), at: at(m) };
+  m = t.match(new RegExp(`${LEAD}(?:не\\s+(?:старше|более|давнее)|не\\s+больше)\\s+${NUM}${YEARS}`));
+  if (m && !AGE_WORD.test(t.slice(Math.max(0, (m.index ?? 0) - 35), m.index ?? 0))) {
+    return { period: clampYears(numOf(m[2])), at: at(m) };
+  }
+  if (/(^|[^а-яеa-z])за\s+последни\S*\s+год/.test(t)) return { period: 1, at: t.search(/за\s+последни\S*\s+год/) };
+
+  m = t.match(new RegExp(`${LEAD}(?:с|со|начиная\\s+с)\\s+((?:19|20)\\d\\d)(?![\\d])`));
+  if (m) {
+    const n = sinceYear(Number(m[2]));
+    if (n) return { period: n, at: at(m) };
+  }
+  m = t.match(new RegExp(`${LEAD}(?:после|позже)\\s+((?:19|20)\\d\\d)(?![\\d])`));
+  if (m) {
+    const n = sinceYear(Number(m[2]) + 1);
+    if (n) return { period: n, at: at(m) };
+  }
+  m = t.match(new RegExp(`${LEAD}(?:за|в|от)\\s+((?:19|20)\\d\\d)\\s*(?:года|году|год|г\\b)`));
+  if (m) {
+    const n = sinceYear(Number(m[2]));
+    if (n) return { period: n, at: at(m) };
+  }
+  m = t.match(new RegExp(`${LEAD}((?:19|20)\\d\\d)\\s*[–—-]\\s*(?:19|20)\\d\\d`));
+  if (m) {
+    const n = sinceYear(Number(m[2]));
+    if (n) return { period: n, at: at(m) };
+  }
+  return null;
 }
 
 export function inferParams(text: string, sc: Scenario, plan?: QueryPlan): Params {
@@ -77,14 +131,10 @@ export function inferParams(text: string, sc: Scenario, plan?: QueryPlan): Param
     }
   }
 
-  if (/любой\s+период|без\s+ограничени\S*\s+по\s+времени/.test(t)) p.period = null;
-  const n = t.match(/за\s+(?:последни\S*\s+)?(\d+)\s*(?:год|лет)/);
-  if (n && n.index !== undefined) {
-    p.period = Math.min(20, Math.max(1, Number(n[1])));
-    p.periodKind = kindAt(t, n.index);
-  } else if (/за\s+последни\S*\s+год/.test(t)) {
-    p.period = 1;
-    p.periodKind = kindAt(t, t.search(/за\s+последни\S*\s+год/));
+  const per = parsePeriod(t);
+  if (per) {
+    p.period = per.period;
+    if (per.period !== null) p.periodKind = kindAt(t, per.at);
   }
 
   const ft = t.match(/полн\S*\s+текст/);

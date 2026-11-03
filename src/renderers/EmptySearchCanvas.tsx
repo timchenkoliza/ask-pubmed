@@ -12,9 +12,21 @@ import { QuestionRow } from '../components/Views';
 
 const TYPE_NAME: Record<StudyType, string> = { sr: 'Систематические обзоры', ma: 'Метаанализы', rct: 'РКИ', cohort: 'Когорты' };
 
-const STRAT = { exact: 'точный', broad: 'расширенный', fallback: 'запасной' } as const;
+const MISSING_TITLE: Record<string, string> = {
+  pmid: 'Публикацию с таким PMID не нашли',
+  doi: 'Публикацию с таким DOI не нашли',
+  title: 'Публикацию с таким названием не нашли',
+  'author-year': 'Публикацию этого автора за этот год не нашли',
+};
 
 interface Line { id: string; text: string; blocker: boolean; kind?: ConstraintKind }
+
+function pubmedLink(by: string | undefined, value: string): string {
+  if (by === 'doi') return `https://doi.org/${value.replace(/^DOI\s*/, '')}`;
+  if (by === 'title') return `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(`"${value}"[Title]`)}`;
+  if (by === 'author-year') return `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(value)}`;
+  return `https://pubmed.ncbi.nlm.nih.gov/${value.replace(/\D/g, '')}/`;
+}
 
 function composition(sc: Scenario, params: Params, response: SearchResponse | null): Line[] {
   const kind = response?.relax?.kind;
@@ -45,6 +57,7 @@ export function EmptySearchCanvas({
   dispatch: Dispatch<Action>;
 }) {
   const missing = response?.state === 'known-publication-not-found' ? state.plan?.known?.value : undefined;
+  const by = state.plan?.known?.by;
   const lines: Line[] = missing ? [{ id: 'id', text: missing, blocker: true }] : composition(sc, params, response);
   const relax = response?.relax;
   const noRelax = !!missing || !relax || !lines.some((l) => l.blocker);
@@ -59,7 +72,7 @@ export function EmptySearchCanvas({
       transition={{ type: 'spring', stiffness: 200, damping: 26 }}
     >
       <QuestionRow query={state.query} onEdit={() => dispatch({ t: 'back' })} dim />
-      <h1 id="empty-h" className="empty-title">{missing ? 'Публикацию с таким номером не нашли' : 'С такими условиями публикаций не нашли'}</h1>
+      <h1 id="empty-h" className="empty-title">{missing ? MISSING_TITLE[by ?? 'pmid'] : 'С такими условиями публикаций не нашли'}</h1>
       <ul className="comp" aria-label="Состав запроса">
         {lines.map((l, i) => (
           <motion.li
@@ -79,10 +92,10 @@ export function EmptySearchCanvas({
       </ul>
       {!missing && response && response.executed.length > 0 && (
         <p className="empty-tried" data-tried={response.executed.map((e) => `${e.strategy}:${e.count}`).join(',')}>
-          Проверили три варианта запроса: {response.executed.map((e) => `${STRAT[e.strategy]} — ${e.count}`).join(', ')}. Обязательные условия не снимали
+          Проверили три варианта запроса, публикаций нет ни в одном. Обязательные условия не снимали
         </p>
       )}
-      {missing && <p className="empty-tried">Номер проверен по записям PubMed, тематический поиск не запускали</p>}
+      {missing && <p className="empty-tried">{by === 'title' ? 'Название' : by === 'author-year' ? 'Автор и год' : by === 'doi' ? 'DOI' : 'PMID'} проверили по записям PubMed, тематический поиск не запускали</p>}
       <div className="empty-actions">
         {!noRelax && relax && (
           <button className="btn btn-primary" onClick={() => dispatch({ t: 'relax' })}>
@@ -94,8 +107,8 @@ export function EmptySearchCanvas({
             <button className="btn btn-primary" onClick={() => dispatch({ t: 'back' })}>
               Изменить запрос
             </button>
-            <a className="btn btn-ghost" href={missing.startsWith('PMID') ? `https://pubmed.ncbi.nlm.nih.gov/${missing.replace(/\D/g, '')}/` : `https://doi.org/${missing.replace(/^DOI\s*/, '')}`} target="_blank" rel="noopener noreferrer">
-              {missing.startsWith('PMID') ? 'Открыть в PubMed' : 'Открыть по DOI'} <ExternalLink size={18} aria-hidden />
+            <a className="btn btn-ghost" href={pubmedLink(by, missing)} target="_blank" rel="noopener noreferrer">
+              {by === 'doi' ? 'Открыть по DOI' : by === 'pmid' ? 'Открыть в PubMed' : 'Искать в PubMed'} <ExternalLink size={18} aria-hidden />
             </a>
           </>
         ) : (

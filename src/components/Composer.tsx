@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { ArrowUp, ListChecks, MessageSquareText, Share2 } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { Dispatch, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { FIXTURES, LOGIC } from '../data/scenarios';
+import { FIXTURES } from '../data/scenarios';
 import type { Scenario, SpanKind } from '../data/types';
 import type { Action, State } from '../state/machine';
 import { segmentQuery } from '../lib/segment';
+import { Showcase } from './Showcase';
 
 export interface SpanRect { kind: SpanKind; x: number; y: number }
 
@@ -22,31 +23,6 @@ const KIND_NAME: Record<SpanKind, string> = {
   constraint: 'ограничение',
   must: 'обязательное условие',
 };
-
-/* Первый запуск: три коротких пункта, у каждого — настоящий пример, который проходит весь путь поиска. */
-const TOUR = [
-  {
-    id: 'words',
-    icon: MessageSquareText,
-    title: 'Ищите PubMed своими словами',
-    text: 'Опишите вопрос так, как задали бы коллеге: состояние, вмешательство, ограничения. Синтаксис запроса не нужен',
-    example: FIXTURES.find((f) => f.id === 'A')!,
-  },
-  {
-    id: 'understood',
-    icon: ListChecks,
-    title: 'Вы увидите, как мы поняли запрос',
-    text: 'Понятия, обязательные и желательные условия — в «Как искали». Их можно поправить, не начиная заново',
-    example: LOGIC.find((f) => f.id === 'L2')!,
-  },
-  {
-    id: 'deep',
-    icon: Share2,
-    title: 'Сложный вывод — отдельный режим',
-    text: 'Здесь ищем и показываем публикации. Сопоставить и свести их в вывод поможет Deep Research — запрос и корпус передадим туда',
-    example: FIXTURES.find((f) => f.id === 'H')!,
-  },
-] as const;
 
 export function HomeView({ state, dispatch, sc, onSpans }: Props) {
   const parsing = state.phase === 'semantic-parsing';
@@ -84,10 +60,22 @@ export function HomeView({ state, dispatch, sc, onSpans }: Props) {
 
   const submit = () => dispatch({ t: 'submit' });
   const ready = state.query.trim().length > 0;
+  const showcase = state.onboarding && !parsing;
+
+  /* «Подставить пример»: запрос попадает в поле, фокус уходит туда, поиск не запускается. */
+  const fill = (query: string) => {
+    dispatch({ t: 'type', query });
+    requestAnimationFrame(() => {
+      const el = ta.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
+  };
 
   return (
     <motion.section
-      className={`home${parsing ? ' is-parsing' : ''}`}
+      className={`home${parsing ? ' is-parsing' : ''}${showcase ? ' home--showcase' : ''}`}
       initial={parsing ? { opacity: 0 } : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10, transition: { duration: 0.22 } }}
@@ -95,8 +83,10 @@ export function HomeView({ state, dispatch, sc, onSpans }: Props) {
     >
       <div className="home-head">
         <h1 className="home-title">Спросить PubMed</h1>
-        <p className="home-sub">Опишите вопрос своими словами — соберём поиск и покажем, что нашли</p>
+        <p className="home-sub">Ищите публикации по медицинскому вопросу</p>
       </div>
+
+      {showcase && <Showcase onFill={fill} onClose={() => dispatch({ t: 'onboarding-done' })} />}
 
       <div className="composer" data-parsing={parsing}>
         {parsing ? (
@@ -130,7 +120,7 @@ export function HomeView({ state, dispatch, sc, onSpans }: Props) {
               ref={ta}
               className="composer-input"
               rows={2}
-              placeholder="Что нужно найти? Опишите своими словами"
+              placeholder="Что хотите найти в PubMed?"
               value={state.query}
               onChange={(e) => dispatch({ t: 'type', query: e.target.value })}
               onKeyDown={(e) => {
@@ -148,49 +138,6 @@ export function HomeView({ state, dispatch, sc, onSpans }: Props) {
           </>
         )}
       </div>
-
-      {state.onboarding && !parsing && (
-        <section className="onboard" aria-labelledby="onboard-h" data-testid="onboarding">
-          <h2 id="onboard-h" className="sr-only">Как это работает</h2>
-          <ol className="onboard-list">
-            {TOUR.map((t) => (
-              <li key={t.id} className="onboard-item">
-                <span className="onboard-ico" aria-hidden>
-                  <t.icon size={20} />
-                </span>
-                <div className="onboard-body">
-                  <h3 className="onboard-t">{t.title}</h3>
-                  <p className="onboard-s">{t.text}</p>
-                  <button
-                    className="onboard-ex"
-                    type="button"
-                    aria-pressed={state.query === t.example.query}
-                    onClick={() => dispatch({ t: 'type', query: t.example.query })}
-                  >
-                    {t.example.query}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <div className="onboard-acts">
-            {ready ? (
-              <button className="btn btn-primary" type="button" onClick={() => dispatch({ t: 'onboarding-done' })}>
-                Понятно
-              </button>
-            ) : (
-              <button className="btn btn-primary" type="button" onClick={() => dispatch({ t: 'load', query: TOUR[0].example.query })}>
-                Попробовать
-              </button>
-            )}
-            {!ready && (
-              <button className="link-btn" type="button" onClick={() => dispatch({ t: 'onboarding-done' })}>
-                Понятно
-              </button>
-            )}
-          </div>
-        </section>
-      )}
 
       {!state.onboarding && <div className="examples" aria-label="Примеры запросов">
         <span className="examples-label">Примеры</span>

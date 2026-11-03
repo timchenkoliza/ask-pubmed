@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ChevronDown, GraduationCap, Lightbulb, RotateCcw, Shuffle } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Images, Lightbulb, RotateCcw, Shuffle } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { LOGO_WHITE_BETA } from '../lib/logo';
 import { useEscape, useOutside } from '../hooks';
@@ -100,7 +100,7 @@ export function TopBar(props: {
                     setOpen(false);
                   }}
                 >
-                  <GraduationCap size={18} aria-hidden /> Показать обучение снова
+                  <Images size={18} aria-hidden /> Показать примеры запросов
                 </button>
                 <div className="pop-sep" />
                 <p className="pop-label">Запросы</p>

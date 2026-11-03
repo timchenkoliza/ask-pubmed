@@ -166,7 +166,7 @@ function widenedText(sc: Scenario, params: Params, items: Pub[], prov: Record<st
         pr.terms[c.id]?.forEach((t) => terms.add(t));
       }
     }
-    if (count) out.push(`«${c.label}»: нашли по словам в названии и abstract (${[...terms].slice(0, 3).join(', ')}), хотя точного термина MeSH у публикации нет`);
+    if (count) out.push(`«${c.label}»: нашли по словам в названии и abstract (${[...terms].slice(0, 3).join(', ')}), хотя в рубрикаторе PubMed у публикации такого термина нет`);
   }
   if (!out.length && items.some((p) => prov[p.id].tier === 'broad')) {
     out.push('Пара объектов сравнения: принимаем публикации, где упомянут любой из двух');

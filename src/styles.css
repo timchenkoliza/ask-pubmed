@@ -2991,8 +2991,7 @@ button:disabled {
 }
 .notice .link-btn,
 .empty .link-btn,
-.home .link-btn,
-.onboard .link-btn {
+.home .link-btn {
   color: var(--accent-brand);
 }
 .notice-tail {
@@ -3378,95 +3377,266 @@ button:disabled {
   color: var(--text-2);
 }
 
-/* Первый запуск */
-.onboard {
-  margin-top: 20px;
-  padding: 20px 20px 16px;
-  border-radius: var(--r-composer);
-  border: 1px solid var(--scene-line);
-  background: var(--scene-glass);
+/* ───────── Примеры запросов на главной ───────── */
+
+.home--showcase {
+  justify-content: flex-start;
+  padding-top: 12px;
+  padding-bottom: clamp(16px, 3vh, 32px);
 }
-.onboard-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px 24px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.home--showcase .home-head {
+  margin-bottom: 8px;
 }
-.onboard-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  min-width: 0;
-}
-.onboard-ico {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  background: rgba(137, 139, 255, 0.18);
-  color: #d9d8ff;
-}
-.onboard-body {
+.sc {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  min-width: 0;
+  gap: 10px;
+  margin-bottom: 16px;
 }
-.onboard-t {
-  margin: 0;
-  font: 600 16px/1.3 var(--sans);
-  letter-spacing: -0.01em;
-  text-wrap: balance;
+.sc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
 }
-.onboard-s {
+.sc-label {
   margin: 0;
-  font: 400 14px/1.45 var(--sans);
+  font: 600 11px/1.2 var(--sans);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--inverse-text-2);
 }
-.onboard-ex {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 36px;
-  padding: 6px 12px;
-  border-radius: 14px;
+.sc-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sc-ico {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
   background: transparent;
   color: var(--inverse-text);
-  text-align: left;
-  font: 500 13px/1.4 var(--sans);
+  transition: background 0.15s, border-color 0.15s;
 }
-.onboard-ex:hover {
-  background: rgba(255, 255, 255, 0.08);
+.sc-ico:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
 }
-.onboard-ex[aria-pressed='true'] {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.7);
+.sc-ico[aria-label='Скрыть примеры'] {
+  border-color: transparent;
+  color: var(--inverse-text-2);
 }
-.onboard-acts {
+.sc-ico[aria-label='Скрыть примеры']:hover {
+  color: var(--inverse-text);
+  background: rgba(255, 255, 255, 0.1);
+}
+.sc-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--scene-line);
+}
+
+.sc-panel {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+}
+.sc-stage {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: clamp(240px, calc(100dvh - 495px), 460px);
+  border-radius: var(--r-card);
+  border: 1px solid var(--scene-line);
+  background: var(--inverse-surface);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+.sc-stage::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 110px;
+  background: linear-gradient(to top, rgba(17, 18, 23, 0.94), rgba(17, 18, 23, 0));
+  pointer-events: none;
+}
+.sc-view {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.sc-frame,
+.sc-inline {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  border: 0;
+  overflow: hidden;
+  transform-origin: 0 0;
+  background: var(--inverse-surface);
+}
+.sc-bar {
+  position: absolute;
+  z-index: 1;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
   align-items: center;
-  gap: 8px 20px;
-  margin-top: 16px;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--scene-line);
+  background: rgba(17, 18, 23, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
-@media (max-width: 900px) {
-  .onboard-list {
-    grid-template-columns: 1fr;
-    gap: 16px;
+.sc-q {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: 400 14px/1.4 var(--sans);
+  color: var(--inverse-text);
+}
+.sc-fill {
+  flex: none;
+  white-space: nowrap;
+}
+
+.sc-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.sc-card {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  column-gap: 10px;
+  row-gap: 2px;
+  min-height: 76px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--scene-line);
+  background: var(--scene-glass);
+  color: var(--inverse-text);
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.sc-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.sc-card[aria-selected='true'] {
+  background: rgba(137, 139, 255, 0.2);
+  border-color: rgba(185, 186, 255, 0.75);
+}
+.sc-card-ico {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--inverse-text);
+}
+.sc-card[aria-selected='true'] .sc-card-ico {
+  background: var(--accent-ink);
+}
+.sc-card-t {
+  font: 600 15px/1.3 var(--sans);
+  letter-spacing: -0.01em;
+}
+.sc-card-s {
+  font: 400 13px/1.4 var(--sans);
+  color: var(--inverse-text-2);
+}
+.sc-card[aria-selected='true'] .sc-card-s {
+  color: #e6e6ff;
+}
+
+/* Внутри превью (в собственном фрейме): та же выдача без верхней панели */
+.pv {
+  animation: pv-in 0.3s ease both;
+}
+.pv .main {
+  padding-top: 18px;
+}
+@keyframes pv-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .pv {
+    animation: none;
+  }
+}
+
 @media (max-width: 640px) {
-  .onboard {
-    padding: 16px;
+  .home--showcase {
+    padding-top: 8px;
   }
-  .onboard-acts .btn {
-    flex: 1 1 100%;
+  .sc {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .sc-stage {
+    height: 262px;
+  }
+  .sc-stage::after {
+    height: 48px;
+  }
+  .sc-bar {
+    position: static;
+    margin-top: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .sc-q {
+    -webkit-line-clamp: 3;
+    font-size: 13px;
+    color: var(--inverse-text-2);
+  }
+  .sc-fill {
+    width: 100%;
+  }
+  .sc-cards {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    margin: 0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));
+    padding: 0 var(--gutter-r) 0 var(--gutter-l);
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 var(--gutter-l);
+    scrollbar-width: none;
+  }
+  .sc-cards::-webkit-scrollbar {
+    display: none;
+  }
+  .sc-card {
+    flex: 0 0 min(268px, 78%);
+    scroll-snap-align: start;
   }
 }

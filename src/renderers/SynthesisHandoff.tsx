@@ -11,7 +11,7 @@ import type { Action, State } from '../state/machine';
 import { keyOfPub, payloadOf } from '../state/session';
 import { MoreLink, RenderProps } from './shared';
 
-/* Вывод и обзор — работа Deep Research, а не поиска. Ask PubMed ищет, ориентирует и показывает (Search → Navigate → Inspect);
+/* Вывод и обзор — работа Deep Research, а не поиска. Спросить PubMed ищет, ориентирует и показывает (Search → Navigate → Inspect);
    читает, сопоставляет, проверяет и сводит Deep Research (Read → Compare → Verify → Synthesize).
    Поэтому здесь нет автоматического ответа: есть корпус, его можно отметить и передать вместе со всем запросом. */
 
@@ -24,7 +24,7 @@ export function SynthesisHandoff({ sc, response, state, dispatch, touch, animate
   let n = 0;
   return (
     <section className={`board board--synth${started ? ' is-merged' : ''}`} aria-label="Корпус для анализа">
-      <ol className="dr-flow" aria-label="Что делает Ask PubMed и что делает Deep Research">
+      <ol className="dr-flow" aria-label="Что делается здесь и что делает Deep Research">
         <li className="dr-flow-here">
           <span className="dr-flow-who">Здесь</span>
           <span>Искать</span>
@@ -101,7 +101,7 @@ function Transfer({ sc, state, response }: { sc: Scenario; state: State; respons
   return (
     <motion.section
       className="transfer"
-      aria-label="Что передано в Deep Research"
+      aria-label="Что уйдёт в Deep Research"
       data-payload={JSON.stringify(pl)}
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
@@ -170,12 +170,13 @@ export function Handoff({ sc, state, dispatch, response }: { sc: Scenario; state
         <p className="handoff-text">
           {started ? (
             <>
-              <Check size={20} aria-hidden /> {dr?.started ?? 'Запрос и корпус переданы в Deep Research'}
+              <Check size={20} aria-hidden /> {dr?.started ?? 'Запрос, условия и публикации собраны для Deep Research'}
             </>
           ) : (
             nb(dr?.problem ?? 'Публикации найдены и разложены, но не сведены в один вывод. Сводить их — работа Deep Research')
           )}
         </p>
+        {started && <p className="handoff-pass">В прототипе Deep Research не подключён: передача показана для примера</p>}
         {pl && !started && (
           <p className="handoff-pass">
             Передадим запрос, {pl.concepts.length} {plural(pl.concepts.length, 'понятие', 'понятия', 'понятий')}, {pl.constraints.length} {plural(pl.constraints.length, 'условие', 'условия', 'условий')} и {state.selected.length ? `${state.selected.length} отмеченных из ${corpus.length}` : `все ${corpus.length}`} {plural(state.selected.length || corpus.length, 'публикацию', 'публикации', 'публикаций')}

@@ -118,7 +118,7 @@ export function PubCard({ pub, lang, variant, dispatch, index, animateIn, moves,
   const lead = pub.fragment;
   /* Публикации, найденные не точным поиском, помечены: врач видит, что они стоят ниже по причине, а не случайно. */
   const tier = useResultCtx()?.response.prov[pub.id]?.tier;
-  const tierLabel = tier === 'broad' ? 'Расширенный поиск' : tier === 'fallback' ? 'Запасной поиск' : null;
+  const tierLabel = tier === 'broad' ? 'По широким терминам' : tier === 'fallback' ? 'Не все пожелания' : null;
 
   /* Без заголовка зоны над карточками (сетка, плотный список) карточка — заголовок второго уровня. */
   const Heading = variant === 'grid' || variant === 'compact' ? motion.h2 : motion.h3;

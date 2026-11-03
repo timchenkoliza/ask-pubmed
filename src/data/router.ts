@@ -121,5 +121,7 @@ export function route(text: string): QueryPlan {
     if (priority.length) plan.priority = priority;
   }
   if (NEWEST.test(t)) plan.sort = 'newest' as SortMode;
+  /* Цитаты просили, а фрагментов для этой темы нет: выдача обычная, но молча подменять задачу нельзя. */
+  if (QUOTE.test(t) && sc && !sc.quotesConcept) plan.quotesUnavailable = true;
   return plan;
 }
