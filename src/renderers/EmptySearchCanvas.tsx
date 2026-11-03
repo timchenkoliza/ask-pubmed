@@ -6,6 +6,8 @@ import { Dispatch } from 'react';
 import type { ConstraintKind, Params, Scenario, SearchResponse, StudyType } from '../data/types';
 import type { Action, State } from '../state/machine';
 import { QuestionRow } from '../components/Views';
+import { ZeroHelp, zeroTitle } from '../components/ZeroHelp';
+import { effTypes } from '../data/match';
 
 /* Ничего не нашли: показываем состав запроса и то, что именно помешало.
    Врачу не нужно гадать, какой фильтр сузил поиск. */
@@ -29,17 +31,18 @@ function pubmedLink(by: string | undefined, value: string): string {
 }
 
 function composition(sc: Scenario, params: Params, response: SearchResponse | null): Line[] {
-  const kind = response?.relax?.kind;
+  const b = response?.blocker ?? null;
+  const filters = b?.kind === 'filters';
   const lines: Line[] = [];
   params.concepts
     .filter((c) => c.active && c.role !== 'quote')
-    .forEach((c) => lines.push({ id: c.id, text: c.role === 'must' ? `${c.label} в публикации` : c.label, blocker: false, kind: kindOfConcept(c) }));
-  if (params.types.length < 4) {
+    .forEach((c) => lines.push({ id: c.id, text: c.role === 'must' ? `${c.label} в публикации` : c.label, blocker: b?.kind === 'concept' && b.id === c.id, kind: kindOfConcept(c) }));
+  if (params.types.length > 0 && effTypes(params).length < 4) {
     const names = params.types.map((t) => sc.typeLabels?.[t] ?? TYPE_NAME[t]);
-    lines.push({ id: 'types', text: names.join(', '), blocker: kind === 'types', kind: 'REQUIRED' });
+    lines.push({ id: 'types', text: names.join(', '), blocker: b?.id === 'types' || filters, kind: 'REQUIRED' });
   }
-  if (params.period !== null) lines.push({ id: 'period', text: lastPeriod(params.period), blocker: kind === 'period', kind: params.periodKind });
-  if (params.fullTextOnly) lines.push({ id: 'fulltext', text: 'Только с полным текстом', blocker: kind === 'fulltext', kind: params.fullTextKind });
+  if (params.period !== null) lines.push({ id: 'period', text: lastPeriod(params.period), blocker: b?.id === 'period' || filters, kind: params.periodKind });
+  if (params.fullTextOnly) lines.push({ id: 'fulltext', text: 'Только с полным текстом', blocker: b?.id === 'fulltext' || filters, kind: params.fullTextKind });
   return lines;
 }
 
@@ -59,8 +62,6 @@ export function EmptySearchCanvas({
   const missing = response?.state === 'known-publication-not-found' ? state.plan?.known?.value : undefined;
   const by = state.plan?.known?.by;
   const lines: Line[] = missing ? [{ id: 'id', text: missing, blocker: true }] : composition(sc, params, response);
-  const relax = response?.relax;
-  const noRelax = !!missing || !relax || !lines.some((l) => l.blocker);
 
   return (
     <motion.section
@@ -72,7 +73,8 @@ export function EmptySearchCanvas({
       transition={{ type: 'spring', stiffness: 200, damping: 26 }}
     >
       <QuestionRow query={state.query} onEdit={() => dispatch({ t: 'back' })} dim />
-      <h1 id="empty-h" className="empty-title">{missing ? MISSING_TITLE[by ?? 'pmid'] : 'С такими условиями публикаций не нашли'}</h1>
+      <h1 id="empty-h" className="empty-title">{missing ? MISSING_TITLE[by ?? 'pmid'] : zeroTitle(response)}</h1>
+      {!missing && response && <ZeroHelp sc={sc} params={params} response={response} dispatch={dispatch} tone="dark" />}
       <ul className="comp" aria-label="Состав запроса">
         {lines.map((l, i) => (
           <motion.li
@@ -92,16 +94,11 @@ export function EmptySearchCanvas({
       </ul>
       {!missing && response && response.executed.length > 0 && (
         <p className="empty-tried" data-tried={response.executed.map((e) => `${e.strategy}:${e.count}`).join(',')}>
-          Проверили три варианта запроса, публикаций нет ни в одном. Обязательные условия не снимали
+          Искали точно, шире и без необязательных условий: публикаций нет ни в одном случае. Обязательные условия не снимали
         </p>
       )}
       {missing && <p className="empty-tried">{by === 'title' ? 'Название' : by === 'author-year' ? 'Автор и год' : by === 'doi' ? 'DOI' : 'PMID'} проверили по записям PubMed, тематический поиск не запускали</p>}
       <div className="empty-actions">
-        {!noRelax && relax && (
-          <button className="btn btn-primary" onClick={() => dispatch({ t: 'relax' })}>
-            {relax.label}
-          </button>
-        )}
         {missing ? (
           <>
             <button className="btn btn-primary" onClick={() => dispatch({ t: 'back' })}>
@@ -112,9 +109,14 @@ export function EmptySearchCanvas({
             </a>
           </>
         ) : (
-          <button className="btn btn-ghost" onClick={() => dispatch({ t: 'open-sheet' })}>
-            Изменить условия
-          </button>
+          <>
+            <button className="btn btn-ghost" onClick={() => dispatch({ t: 'open-sheet' })}>
+              Изменить условия
+            </button>
+            <button className="btn btn-quiet" onClick={() => dispatch({ t: 'back' })}>
+              Изменить запрос
+            </button>
+          </>
         )}
       </div>
     </motion.section>

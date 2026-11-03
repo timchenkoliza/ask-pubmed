@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { demoBackend } from './data/backend';
-import { CLASSIC, FIXTURES, LOGIC, SCENARIO_MAP } from './data/scenarios';
+import { CLASSIC, EXAMPLE_HINT, FIXTURES, LOGIC, SCENARIO_MAP } from './data/scenarios';
 import { Action, State, displayPhase, initialState, intentOf, isLanding, loadOnboardingSeen, loadPrefs, paramsOf, reducer, saveOnboardingSeen, savePrefs, viewOf } from './state/machine';
 import { layoutOf, useCoarse, useShakeGesture, useViewport } from './hooks';
 import { ShapeMode, geomKindFor, modeFor } from './lib/geom';
@@ -13,15 +13,18 @@ import { EvidenceShape, SeedSrc } from './components/EvidenceShape';
 import { StateTag, TopBar, Toast, ExampleItem } from './components/Chrome';
 import { HomeView, SpanRect } from './components/Composer';
 import { Results } from './components/Results';
+import { ModeBar } from './components/ModeBar';
 import { Sheet } from './components/Sheet';
 import { RouteView, SearchingView, UnrecognisedView } from './components/Views';
 import { ClarificationCanvas } from './renderers/ClarificationCanvas';
+import { DeepResearchCanvas } from './renderers/DeepResearchCanvas';
+import { PbzCanvas } from './renderers/PbzCanvas';
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 const EXAMPLES: ExampleItem[] = [
-  ...FIXTURES.map((f) => ({ id: f.id, label: `${f.id} · ${f.label}`, query: f.query, group: 'fixtures' as const })),
-  ...LOGIC.map((f) => ({ id: f.id, label: f.label, query: f.query, group: 'logic' as const })),
+  ...FIXTURES.map((f) => ({ id: f.id, label: `${f.id} · ${f.label}`, hint: EXAMPLE_HINT[f.id], query: f.query, group: 'fixtures' as const })),
+  ...LOGIC.map((f) => ({ id: f.id, label: f.label, hint: EXAMPLE_HINT[f.id], query: f.query, group: 'logic' as const })),
   ...CLASSIC.map((f) => ({ id: f.id, label: f.label, query: f.query, group: 'classic' as const })),
 ];
 
@@ -46,7 +49,11 @@ export default function App() {
   const rview = viewOf(state);
 
   const page =
-    ph === 'idle' || ph === 'query-entered' || ph === 'semantic-parsing'
+    state.surface === 'pbz' && state.pbz && state.response
+      ? 'pbz'
+      : state.surface === 'dr' && state.dr && state.response
+        ? 'dr'
+        : ph === 'idle' || ph === 'query-entered' || ph === 'semantic-parsing'
       ? 'home'
       : ph === 'ambiguous-term'
         ? 'ask'
@@ -219,7 +226,7 @@ export default function App() {
     if (page === 'result' && response?.items.some((p) => p.fullTextState !== 'pmc-full-text') && intent === 'find-in-text') f.push('full-text-unavailable');
     return f;
   }, [state.lang, page, response, intent]);
-  const stateLine = [ph, ...(page === 'result' || page === 'ask' ? [`${intent}/${rview}`] : []), ...flags].join(' · ');
+  const stateLine = [page === 'pbz' ? 'pbz · q&a' : page === 'dr' ? `deep research · ${state.dr?.stage ?? 'plan'}` : ph, ...(page === 'result' || page === 'ask' ? [`${intent}/${rview}`] : []), ...flags].join(' · ');
 
   /* Объявление для скринридера: сколько нашли и в каком виде показано (раскладка меняется без перезагрузки). */
   const VIEW_NAME: Record<string, string> = {
@@ -244,14 +251,36 @@ export default function App() {
           : `Найдено ${response.total} ${plural(response.total, 'публикация', 'публикации', 'публикаций')}. Показано ${VIEW_NAME[rview] ?? 'списком'}`
       : page === 'ask'
         ? 'Уточните, что вы имеете в виду'
-        : '';
+        : page === 'pbz'
+          ? 'Открыт ПБЗ: вопросы по найденному'
+          : page === 'dr'
+            ? `Открыт Deep Research: ${state.dr?.stage === 'plan' ? 'план исследования' : state.dr?.stage === 'running' ? 'ход исследования' : 'результат'}`
+            : '';
 
   const pick = (e: ExampleItem) => dispatch({ t: 'load', query: e.query });
   const goBack = () => dispatch({ t: 'back' });
 
+  /* Режим сменился по кнопке, и кнопка исчезла вместе со старым экраном: фокус переносим на заголовок нового режима,
+     иначе клавиатура и скринридер оказываются в начале страницы. */
+  const lastSurface = useRef(state.surface);
+  useEffect(() => {
+    if (lastSurface.current === state.surface) return;
+    lastSurface.current = state.surface;
+    const t = requestAnimationFrame(() => {
+      const h = document.querySelector<HTMLElement>('main :is(h1, h2)');
+      if (h) {
+        h.tabIndex = -1;
+        h.focus({ preventScroll: true });
+      }
+    });
+    return () => cancelAnimationFrame(t);
+  }, [state.surface]);
+
   const colKind =
     page === 'ask' || page === 'unrecognised' || (page === 'result' && intent === 'empty')
       ? 'col--focus'
+      : page === 'pbz' || page === 'dr'
+        ? 'col--wide'
       : page === 'result'
         ? rview === 'publication' || state.pub
           ? 'col--read'
@@ -263,7 +292,8 @@ export default function App() {
       className={`app app--${layout} page-${page} intent-${page === 'result' ? intent : page === 'ask' ? 'clarify' : 'none'}`}
       data-job={state.plan?.job ?? ''}
       data-result-state={page === 'result' ? (response?.state ?? '') : page === 'ask' ? 'ambiguous-query' : ''}
-      data-renderer={page === 'result' || page === 'ask' ? rview : ''}
+      data-renderer={page === 'result' || page === 'ask' ? rview : page === 'pbz' || page === 'dr' ? page : ''}
+      data-surface={state.surface}
       data-sort={state.sort}
       data-onboarding={state.onboarding && page === 'home' ? 'on' : 'off'}
     >
@@ -317,6 +347,9 @@ export default function App() {
             {page === 'route' && sc && <RouteView key="route" state={state} sc={sc} dispatch={dispatch} />}
             {page === 'unrecognised' && <UnrecognisedView key="unrecognised" state={state} dispatch={dispatch} />}
             {page === 'searching' && <SearchingView key="searching" query={state.query} onEdit={goBack} />}
+            {page === 'pbz' && sc && response && <PbzCanvas key="pbz" state={state} sc={sc} response={response} dispatch={dispatch} />}
+            {page === 'dr' && sc && params && response && <DeepResearchCanvas key="dr" state={state} sc={sc} params={params} response={response} dispatch={dispatch} />}
+            {page === 'result' && !state.pub && state.visited.length > 1 && <ModeBar key="modebar" state={state} dispatch={dispatch} />}
             {page === 'result' && sc && params && response && (
               <motion.div
                 key="result"

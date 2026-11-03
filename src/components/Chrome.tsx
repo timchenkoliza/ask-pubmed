@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { LOGO_WHITE_BETA } from '../lib/logo';
 import { useEscape, useOutside } from '../hooks';
 
-export interface ExampleItem { id: string; label: string; query: string; group: 'fixtures' | 'logic' | 'classic' }
+export interface ExampleItem { id: string; label: string; hint?: string; query: string; group: 'fixtures' | 'logic' | 'classic' }
 
 export function TopBar(props: {
   canBack: boolean;
@@ -103,60 +103,34 @@ export function TopBar(props: {
                   <Images size={18} aria-hidden /> Показать примеры запросов
                 </button>
                 <div className="pop-sep" />
-                <p className="pop-label">Запросы</p>
-                {props.examples
-                  .filter((e) => e.group === 'fixtures')
-                  .map((e) => (
-                    <button
-                      key={e.id}
-                      role="menuitemradio"
-                      aria-checked={e.query === props.currentQuery}
-                      className={`pop-item${e.query === props.currentQuery ? ' is-on' : ''}`}
-                      onClick={() => {
-                        props.onPick(e);
-                        setOpen(false);
-                      }}
-                    >
-                      {e.label}
-                    </button>
-                  ))}
-                <div className="pop-sep" />
-                <p className="pop-label">Логика поиска</p>
-                {props.examples
-                  .filter((e) => e.group === 'logic')
-                  .map((e) => (
-                    <button
-                      key={e.id}
-                      role="menuitemradio"
-                      aria-checked={e.query === props.currentQuery}
-                      className={`pop-item${e.query === props.currentQuery ? ' is-on' : ''}`}
-                      onClick={() => {
-                        props.onPick(e);
-                        setOpen(false);
-                      }}
-                    >
-                      {e.label}
-                    </button>
-                  ))}
-                <div className="pop-sep" />
-                <p className="pop-label">Исходные запросы</p>
-                {props.examples
-                  .filter((e) => e.group === 'classic')
-                  .map((e) => (
-                    <button
-                      key={e.id}
-                      role="menuitemradio"
-                      aria-checked={e.query === props.currentQuery}
-                      className={`pop-item${e.query === props.currentQuery ? ' is-on' : ''}`}
-                      onClick={() => {
-                        props.onPick(e);
-                        setOpen(false);
-                      }}
-                    >
-                      {e.label}
-                    </button>
-                  ))}
-                <div className="pop-sep" />
+                {([['fixtures', 'Запросы'], ['logic', 'Логика поиска'], ['classic', 'Исходные запросы']] as const).map(([group, title], gi) => (
+                  <div key={group}>
+                    {gi > 0 && <div className="pop-sep" />}
+                    <p className="pop-label">{title}</p>
+                    {props.examples
+                      .filter((e) => e.group === group)
+                      .map((e) => (
+                        <button
+                          key={e.id}
+                          role="menuitemradio"
+                          aria-checked={e.query === props.currentQuery}
+                          className={`pop-item${e.hint ? ' pop-item--hint' : ''}${e.query === props.currentQuery ? ' is-on' : ''}`}
+                          onClick={() => {
+                            props.onPick(e);
+                            setOpen(false);
+                          }}
+                        >
+                          <span className="pop-name">{e.label}</span>
+                          {e.hint && (
+                            <>
+                              {' '}
+                              <span className="pop-hint">{e.hint}</span>
+                            </>
+                          )}
+                        </button>
+                      ))}
+                  </div>
+                ))}
                 <div className="pop-sep" />
                 <p className="pop-state">{props.stateLine}</p>
               </motion.div>

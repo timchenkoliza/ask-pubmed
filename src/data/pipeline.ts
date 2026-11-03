@@ -1,4 +1,6 @@
 import type {
+  Alternative,
+  Blocker,
   Dropped,
   ExecutedVariant,
   Params,
@@ -12,7 +14,8 @@ import type {
   SortMode,
   Strategy,
 } from './types';
-import { evaluate, Eval, preferredClauses } from './match';
+import { ALL_TYPES, evaluate, Eval, kindOfConcept, preferredClauses } from './match';
+import { applyCandidate } from './terms';
 import { compileQueries } from './compile';
 import { knownQuery, pubById } from './known';
 import { withinPeriod } from '../lib/typo';
@@ -179,9 +182,15 @@ function widenedText(sc: Scenario, params: Params, items: Pub[], prov: Record<st
 
 const widerPeriod = (p: number): Period => (p < 5 ? 5 : p < 10 ? 10 : null);
 
-/** Ослабляем только обязательное и только то, что подтверждено тестовым поиском: после ослабления должны появиться публикации. */
+type RelaxDraft = Relax extends infer R ? (R extends Relax ? Omit<R, 'count'> : never) : never;
+
+/** Все фильтры сняты, понятия остались: если и так пусто, дело в самих понятиях запроса. */
+const noFilters = (p: Params): Params => ({ ...p, period: null, fullTextOnly: false, types: [], preferTypes: [] });
+
+/** Ослабляем только обязательное и только то, что подтверждено тестовым поиском: после ослабления должны появиться публикации.
+    Сначала одно условие, потом все фильтры сразу: врач получает самый мягкий шаг, который действительно что-то находит. */
 function relaxFor(sc: Scenario, p: Params): Relax | null {
-  const cands: { relax: Relax; apply: (q: Params) => Params }[] = [];
+  const cands: { relax: RelaxDraft; apply: (q: Params) => Params }[] = [];
   if (p.period !== null) {
     const to = widerPeriod(p.period);
     cands.push({ relax: { kind: 'period', to, label: to === null ? 'Искать за всё время' : `Искать ${withinPeriod(to)}` }, apply: (q) => ({ ...q, period: to }) });
@@ -189,17 +198,56 @@ function relaxFor(sc: Scenario, p: Params): Relax | null {
   if (p.fullTextOnly) {
     cands.push({ relax: { kind: 'fulltext', label: 'Искать не только с полным текстом' }, apply: (q) => ({ ...q, fullTextOnly: false }) });
   }
-  if (p.types.length < 4) {
-    cands.push({ relax: { kind: 'types', label: 'Искать по всем типам исследований' }, apply: (q) => ({ ...q, types: ['sr', 'ma', 'rct', 'cohort'] }) });
+  if (p.types.length > 0 && p.types.length < 4) {
+    cands.push({ relax: { kind: 'types', label: 'Искать по всем типам исследований' }, apply: (q) => ({ ...q, types: [...ALL_TYPES] }) });
   }
-  for (const c of cands) if (unionSize(collect(sc.pool, c.apply(p), sc)) > 0) return c.relax;
+  for (const c of cands) {
+    const count = unionSize(collect(sc.pool, c.apply(p), sc));
+    if (count > 0) return { ...c.relax, count } as Relax;
+  }
+  const changed = cands.length;
+  if (changed > 1) {
+    const count = unionSize(collect(sc.pool, noFilters(p), sc));
+    if (count > 0) return { kind: 'filters', label: 'Снять период, тип и полный текст', count };
+  }
   return null;
+}
+
+const FILTER_LABEL = { period: 'Период', fulltext: 'Полный текст', types: 'Тип исследований' } as const;
+
+/** Что помешало. Фильтр — если после его ослабления публикации есть. Иначе пробуем снять фильтры целиком:
+    если и так пусто, мешает понятие запроса, и именно то, без которого публикации появляются. */
+function blockerFor(sc: Scenario, p: Params, relax: Relax | null): Blocker | null {
+  if (relax && relax.kind !== 'filters') return { kind: relax.kind, id: relax.kind, label: FILTER_LABEL[relax.kind] };
+  if (relax) return { kind: 'filters', id: 'filters', label: 'Сочетание условий' };
+  const base = noFilters(p);
+  let best: { c: Params['concepts'][number]; n: number } | null = null;
+  for (const c of p.concepts) {
+    if (!c.active || c.role === 'quote' || kindOfConcept(c) !== 'REQUIRED') continue;
+    const without: Params = { ...base, concepts: base.concepts.map((x) => (x.id === c.id ? { ...x, active: false } : x)) };
+    const n = unionSize(collect(sc.pool, without, sc));
+    if (n > 0 && (!best || n > best.n)) best = { c, n };
+  }
+  return best ? { kind: 'concept', id: best.c.id, label: best.c.label } : null;
+}
+
+/** Другие значения термина, при которых публикации есть сейчас, с текущими фильтрами. */
+function alternativesFor(sc: Scenario, p: Params, blocker: Blocker | null, nowId?: string): Alternative[] {
+  const amb = sc.ambiguity;
+  if (!amb || !blocker || blocker.kind !== 'concept' || blocker.id !== amb.conceptId) return [];
+  const out: Alternative[] = [];
+  for (const o of amb.options) {
+    if (o.id === nowId) continue;
+    const count = unionSize(collect(sc.pool, applyCandidate(p, sc, o), sc));
+    if (count > 0) out.push({ id: o.id, label: o.label, hint: o.hint, count });
+  }
+  return out.sort((a, b) => b.count - a.count);
 }
 
 /* ─── Основной вход ─── */
 
 const empty = (state: SearchResponse['state'], queries: SearchResponse['queries'], sort: SortMode): SearchResponse => ({
-  total: 0, fullText: 0, reviews: 0, items: [], queries, relax: null, state, lead: null, executed: [], prov: {}, dropped: [], widened: [],
+  total: 0, fullText: 0, reviews: 0, items: [], queries, relax: null, blocker: null, alternatives: [], state, lead: null, executed: [], prov: {}, dropped: [], widened: [],
   counts: { exact: 0, broad: 0, fallback: 0 }, mergedFrom: 0, sort,
 });
 
@@ -224,6 +272,8 @@ function runKnown(plan: SearchPlan): SearchResponse {
     items: [pub],
     queries,
     relax: null,
+    blocker: null,
+    alternatives: [],
     state: 'known-publication-found',
     lead: 'exact',
     executed: [{ strategy: 'exact', query: q, count: 1, ids: [pub.id], dropped: [] }],
@@ -249,6 +299,8 @@ export function runPipeline(plan: SearchPlan): SearchResponse {
   if (unionSize(col) === 0) {
     const r = empty('zero-results', queries, sort);
     r.relax = relaxFor(sc, params);
+    r.blocker = blockerFor(sc, params, r.relax);
+    r.alternatives = alternativesFor(sc, params, r.blocker, plan.ambiguityId);
     r.executed = col.ran.map((s) => ({ strategy: s, query: queries[s], count: 0, ids: [], dropped: s === 'fallback' ? preferredClauses(params, sc) : [] }));
     r.counts = counts;
     return r;
@@ -280,6 +332,8 @@ export function runPipeline(plan: SearchPlan): SearchResponse {
     items: m.items,
     queries,
     relax: null,
+    blocker: null,
+    alternatives: [],
     state, lead, executed,
     prov: m.prov,
     dropped,

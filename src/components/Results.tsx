@@ -1,6 +1,6 @@
 import { LayoutGroup } from 'framer-motion';
-import { ArrowDownWideNarrow, Info } from 'lucide-react';
-import { Dispatch, useEffect, useLayoutEffect, useMemo } from 'react';
+import { ArrowDownWideNarrow, ArrowUp, Info, Telescope } from 'lucide-react';
+import { Dispatch, FormEvent, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { CLASSIC, FIXTURES } from '../data/scenarios';
 import { pubById } from '../data/known';
 import type { Params, Pub, ResultIntent, Scenario, SearchResponse, SortMode } from '../data/types';
@@ -20,6 +20,7 @@ import { QuoteBoard } from '../renderers/QuoteBoard';
 import { SynthesisHandoff } from '../renderers/SynthesisHandoff';
 import { Fact, RenderProps, ResultHead, ShakeHint } from '../renderers/shared';
 import { ResultCtx } from './ResultContext';
+import { PBZ_PROMPTS } from '../lib/pbz';
 
 /* Выбор экрана по задаче и текущему представлению.
    Каждый тип выдачи имеет собственный компонент с собственной геометрией.
@@ -162,6 +163,39 @@ function SortBar({ sort, count, tiered, dispatch }: { sort: SortMode; count: num
   );
 }
 
+/** Продолжение в том же чате: вопрос по найденному уходит в ПБЗ вместе с контекстом. Углубиться можно в Deep Research, но только по кнопке. */
+function FollowUp({ dispatch }: { dispatch: Dispatch<Action> }) {
+  const [q, setQ] = useState('');
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (q.trim()) dispatch({ t: 'open-pbz', ask: q });
+  };
+  return (
+    <section className="follow" aria-labelledby="follow-h">
+      <h2 id="follow-h" className="follow-h">Спросить о найденном</h2>
+      <form className="follow-form" onSubmit={submit}>
+        <label className="sr-only" htmlFor="follow-q">Вопрос о найденных публикациях</label>
+        <input id="follow-q" className="follow-in" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Например: чем различаются подходы в этих работах" autoComplete="off" />
+        <button className="icon-btn follow-send" type="submit" aria-label="Спросить в ПБЗ" disabled={!q.trim()}>
+          <ArrowUp size={20} aria-hidden />
+        </button>
+      </form>
+      <div className="follow-row">
+        <div className="chips" role="group" aria-label="Примеры вопросов">
+          {PBZ_PROMPTS.map((p) => (
+            <button key={p} type="button" className="chip" onClick={() => dispatch({ t: 'open-pbz', ask: p })}>
+              {p}
+            </button>
+          ))}
+        </div>
+        <button type="button" className="btn btn-quiet" onClick={() => dispatch({ t: 'to-surface', to: 'dr' })}>
+          <Telescope size={18} aria-hidden /> Углубиться в Deep Research
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function Results({ state, dispatch, sc, params, response, layout, touch, onHintUse }: Props) {
   const intent = intentOf(state);
   const view = viewOf(state);
@@ -205,6 +239,7 @@ export function Results({ state, dispatch, sc, params, response, layout, touch, 
             quoteId={open ? state.pub?.quote : undefined}
             find={landing && state.plan?.find ? { phrase: state.plan.find.phrase, terms: state.plan.find.terms } : undefined}
             foundBy={landing ? state.plan?.known?.value : undefined}
+            topic={open && !landing ? { id: sc.id, title: sc.title } : undefined}
           />
         </ResultCtx.Provider>
       );
@@ -269,6 +304,7 @@ export function Results({ state, dispatch, sc, params, response, layout, touch, 
         <Notice response={response} dispatch={dispatch} tail={intent === 'explore' && view !== 'grouped' && state.sort === 'relevance'} />
         {showSort && <SortBar sort={state.sort} count={response.items.length} tiered={new Set(response.items.map((p) => response.prov[p.id]?.tier ?? 'exact')).size > 1} dispatch={dispatch} />}
         <div className={busy ? 'board-wrap is-busy' : 'board-wrap'}>{board}</div>
+        {response.items.length > 0 && !busy && <FollowUp dispatch={dispatch} />}
       </LayoutGroup>
     </ResultCtx.Provider>
   );

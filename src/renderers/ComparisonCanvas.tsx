@@ -2,11 +2,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { PubCard } from '../components/Card';
 import { Comparison, splitComparison } from '../lib/groups';
-import { plural } from '../lib/typo';
 import { RenderProps } from './shared';
 
-/* Сравнение: два объекта как якоря сверху, под ними публикации, где встречаются оба подхода.
-   «Сравнивают напрямую» только те, где это отмечено в самих данных (directComparison); остальные — «упоминают оба».
+/* Сравнение: два объекта как якоря сверху, под ними публикации про оба подхода.
+   «Сравнивают напрямую» только те, где это отмечено в самих данных (directComparison); остальные упоминают оба, но не сопоставляют.
+   Разницу несут сами названия зон, поэтому ни пояснительных фраз, ни пометок на карточках нет.
    Работы об одном подходе лежат отдельно и свёрнуты. */
 
 export function ComparisonCanvas({ sc, response, state, dispatch, layout, touch, animateIn }: RenderProps) {
@@ -41,13 +41,12 @@ export function ComparisonCanvas({ sc, response, state, dispatch, layout, touch,
         transition={{ delay: 0.12, duration: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
       >
         <header className="direct-head">
-          <h2 id="direct-h" className="direct-title">Публикации, где встречаются оба подхода</h2>
-          <p className="direct-sub">
-            {together.length} {plural(together.length, 'публикация', 'публикации', 'публикаций')}: упомянуты и {a.short ?? a.label.toLowerCase()}, и {b.short ?? b.label.toLowerCase()}. Совместное упоминание ещё не значит, что авторы их сравнивают
-          </p>
+          <h2 id="direct-h" className="direct-title">
+            Про оба подхода <span className="zone-count">{together.length}</span>
+          </h2>
         </header>
 
-        {together.length === 0 && <p className="direct-empty">Работ, где упомянуты оба подхода, с такими условиями нет</p>}
+        {together.length === 0 && <p className="direct-empty">Публикаций про оба подхода сразу с такими условиями нет</p>}
 
         {direct.length > 0 ? (
           <div className="cmp-sub" data-zone="direct">
@@ -56,22 +55,22 @@ export function ComparisonCanvas({ sc, response, state, dispatch, layout, touch,
             </h3>
             <motion.div layoutScroll className="cards-grid cards-grid--direct">
               {direct.map((p) => (
-                <PubCard key={p.id} pub={p} lang={state.lang[p.id]} variant="direct" dispatch={dispatch} index={n++} animateIn={animateIn} moves={state.viewMoves} touch={touch} marks={[{ label: 'Прямое сравнение', tone: 'a' }]} />
+                <PubCard key={p.id} pub={p} lang={state.lang[p.id]} variant="direct" dispatch={dispatch} index={n++} animateIn={animateIn} moves={state.viewMoves} touch={touch} />
               ))}
             </motion.div>
           </div>
         ) : (
-          together.length > 0 && <p className="direct-empty" data-zone="no-direct">Прямых сравнений среди найденных нет: авторы упоминают оба подхода, но не сопоставляют их</p>
+          together.length > 0 && <p className="direct-empty" data-zone="no-direct">Прямого сравнения среди найденных нет</p>
         )}
 
         {both.length > 0 && (
           <div className="cmp-sub" data-zone="both">
             <h3 className="cmp-sub-h">
-              Упоминают оба подхода <span className="zone-count">{both.length}</span>
+              Упоминают оба, но не сравнивают <span className="zone-count">{both.length}</span>
             </h3>
             <motion.div layoutScroll className="cards-grid cards-grid--direct">
               {both.map((p) => (
-                <PubCard key={p.id} pub={p} lang={state.lang[p.id]} variant="direct" dispatch={dispatch} index={n++} animateIn={animateIn} moves={state.viewMoves} touch={touch} marks={[{ label: 'Оба упомянуты', tone: 'b' }]} />
+                <PubCard key={p.id} pub={p} lang={state.lang[p.id]} variant="direct" dispatch={dispatch} index={n++} animateIn={animateIn} moves={state.viewMoves} touch={touch} />
               ))}
             </motion.div>
           </div>
@@ -101,7 +100,6 @@ export function OneSided({
   const { a, b, onlyA, onlyB } = cmp;
   const one = onlyA.length + onlyB.length;
   const open = state.oneSided;
-  const mobile = layout === 'mobile';
   let n = start;
   if (one === 0) return null;
   return (
@@ -145,7 +143,6 @@ export function OneSided({
                           moves={state.viewMoves}
                           touch={touch}
                           shared={false}
-                          marks={[{ label: x.e.short ?? x.e.label, tone: x.e.id === a.id ? 'a' : 'b' }]}
                         />
                       ))}
                     </div>
@@ -155,7 +152,6 @@ export function OneSided({
           </motion.div>
         )}
       </AnimatePresence>
-      {!open && !mobile && <p className="oneside-note">Не сравнивают подходы напрямую и не смешиваются с основной зоной</p>}
     </section>
   );
 }

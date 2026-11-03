@@ -112,6 +112,7 @@ export function LangToggle({ lang, onToggle, label }: { lang: Lang | undefined; 
       className="lang"
       type="button"
       aria-label={`EN RU. ${label}: ${ru ? 'показать оригинал' : 'перевести на русский'}`}
+      title={ru ? 'Показать название и фрагмент на английском' : 'Перевести название и фрагмент на русский'}
       aria-pressed={ru}
       onClick={(e) => {
         e.stopPropagation();
@@ -229,14 +230,13 @@ export function PubCard({ pub, lang, variant, dispatch, index, animateIn, moves,
           </span>
         </div>
         {title}
-        {tierLabel && variant !== 'mini' && <span className={`tier-tag tier-tag--${tier}`}>{tierLabel}</span>}
+        {tierLabel && variant !== 'mini' && <WhyButton pub={pub} title={text} tag={tierLabel} />}
         {variant !== 'mini' && (
           <div className="card-foot">
             <p className="card-ft" data-ft={pub.fullTextState}>
               <FtIcon state={pub.fullTextState} />
               {ft}
             </p>
-            <WhyButton pub={pub} title={text} />
           </div>
         )}
         {marks && marks.length > 0 && (

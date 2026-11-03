@@ -1,4 +1,4 @@
-import type { ConstraintKind, Concept, Params, Pub, Scenario, Strategy } from './types';
+import type { ConstraintKind, Concept, Params, Pub, Scenario, StudyType, Strategy } from './types';
 import { NOW_YEAR } from './scenarios';
 
 /* Демо-эквивалент того, что делает PubMed с запросом врача.
@@ -77,6 +77,11 @@ export function conceptHit(p: Pub, c: Concept, mode: Mode): { via: Via; terms: s
   return hit.length ? { via: 'text', terms: hit } : null;
 }
 
+export const ALL_TYPES: StudyType[] = ['sr', 'ma', 'rct', 'cohort'];
+
+/** Допустимые типы исследований. Ничего не отмечено значит «любые»: пустой список не должен обнулять выдачу. */
+export const effTypes = (p: Params): StudyType[] => (p.types.length ? p.types : ALL_TYPES);
+
 const WEIGHT: Record<Via, number> = { mesh: 3, tiab: 2, flag: 2, text: 1 };
 
 const inPeriod = (p: Pub, period: number | null) => period === null || p.year >= NOW_YEAR - period;
@@ -130,7 +135,7 @@ export function evaluate(p: Pub, params: Params, sc: Scenario | null, mode: Mode
   }
 
   /* Тип исследования: допустимые типы всегда обязательны, «в приоритете» желательны. */
-  const typeOk = params.types.includes(p.type);
+  const typeOk = effTypes(params).includes(p.type);
   note('REQUIRED', 'types', typeOk);
   if (!typeOk && mode !== 'diag') r.ok = false;
   if (params.preferTypes.length) {

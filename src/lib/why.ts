@@ -18,10 +18,10 @@ export interface WhyData {
   pmid?: string;
 }
 
-const VIA: Record<string, string> = { mesh: 'рубрика MeSH', tiab: 'слова в названии или abstract', text: 'слова из запроса', flag: 'упомянуто в тексте' };
+const VIA: Record<string, string> = { mesh: 'есть в рубрикаторе PubMed', tiab: 'слова в названии или abstract', text: 'похожие слова в записи', flag: 'упомянуто в тексте' };
 
 export function labelOf(id: string, params: Params, sc: Scenario): string {
-  if (id === 'types') return `Тип исследования: ${params.types.map((t) => lcFirst(sc.typeLabels?.[t] ?? TYPE_NAME[t])).join(', ')}`;
+  if (id === 'types') return params.types.length ? `Тип исследования: ${params.types.map((t) => lcFirst(sc.typeLabels?.[t] ?? TYPE_NAME[t])).join(', ')}` : 'Тип исследования: любой';
   if (id === 'prefer-types') return `В приоритете: ${params.preferTypes.map((t) => TYPE_NAME[t]).join(', ')}`;
   if (id === 'period') return params.period ? `Период: ${periodText(params.period)}` : 'Период';
   if (id === 'fulltext') return 'Полный текст';
@@ -53,8 +53,8 @@ export function explain(pub: Pub, response: SearchResponse, params: Params, sc: 
     : prov.tier === 'exact'
       ? 'Подходит под все условия запроса'
       : prov.tier === 'broad'
-        ? 'Найдена при расширенном поиске: понятия искали ещё и по синонимам'
-        : 'Найдена запасным поиском: подходит под обязательные условия, но не под все пожелания';
+        ? 'Нашли по синонимам в названии и abstract: точный поиск эту публикацию не вернул'
+        : 'Подходит под обязательные условия, но не под все пожелания';
   return { tier: prov.tier, headline, found, concepts, required, missed, fullText: FT_LONG[pub.fullTextState], pmid: pub.pmid };
 }
 

@@ -1,5 +1,5 @@
 import { AnimatePresence, animate, motion } from 'framer-motion';
-import { ExternalLink, Lock, SlidersHorizontal, X } from 'lucide-react';
+import { ExternalLink, Lock, MessageSquare, SlidersHorizontal, X } from 'lucide-react';
 import { Dispatch, ReactNode, RefObject, useEffect, useRef, useState } from 'react';
 import { pubmedUrl } from '../data/compile';
 import type { Params, Pub, ResultIntent, Scenario, SearchResponse } from '../data/types';
@@ -97,6 +97,9 @@ export function ResultHead({ query, title, summary, facts, busy, params, intent,
           <Strip items={facts} busy={busy} />
           <div className="head-actions">
             {children}
+            <button className="btn btn-ghost" onClick={() => dispatch({ t: 'open-pbz' })}>
+              <MessageSquare size={18} aria-hidden /> Обсудить в ПБЗ
+            </button>
             <button className="btn btn-ghost" onClick={() => dispatch({ t: 'open-sheet' })}>
               <SlidersHorizontal size={18} aria-hidden /> Как искали
             </button>

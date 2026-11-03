@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, ExternalLink, Search, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, Bell, MessageSquare, ChevronDown, ChevronUp, Copy, ExternalLink, Search, SlidersHorizontal } from 'lucide-react';
 import { Dispatch, Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { FtIcon, MorphTitle, TYPE_ONE } from '../components/Card';
 import { FT_LONG, hasAbstract, searchableText } from '../lib/fulltext';
@@ -82,9 +82,26 @@ interface Props {
   find?: { phrase?: string; terms: string[] };
   /** Как публикацию нашли: PMID, DOI, название, автор и год. */
   foundBy?: string;
+  /** Тема поиска, из которого открыта статья: на неё тоже можно подписаться. */
+  topic?: { id: string; title: string };
 }
 
-export function PublicationCanvas({ pub, state, dispatch, fromList, quoteId, find, foundBy }: Props) {
+/** Строка подписки: переключатель с названием того, на что подписываемся. */
+function SubRow({ kind, name, on, onToggle }: { kind: string; name: string; on: boolean; onToggle: () => void }) {
+  return (
+    <button className="switch-row sub-row" role="switch" aria-checked={on} onClick={onToggle}>
+      <span className="switch-text">
+        <span className="sub-kind">{kind}</span>
+        <span className="switch-label sub-name">{name}</span>
+      </span>
+      <span className="switch" aria-hidden>
+        <span className="switch-knob" />
+      </span>
+    </button>
+  );
+}
+
+export function PublicationCanvas({ pub, state, dispatch, fromList, quoteId, find, foundBy, topic }: Props) {
   const reduced = !!useReducedMotion();
   const lang = state.lang[pub.id];
   const ru = lang === 'ru';
@@ -150,7 +167,7 @@ export function PublicationCanvas({ pub, state, dispatch, fromList, quoteId, fin
     >
       {fromList && (
         <button className="back-link back-link--dark" onClick={() => dispatch({ t: 'close-pub' })}>
-          <ArrowLeft size={18} aria-hidden /> К результатам
+          <ArrowLeft size={18} aria-hidden /> {state.pubFrom === 'pbz' ? 'Назад в ПБЗ' : state.pubFrom === 'dr' ? 'Назад в Deep Research' : 'К результатам'}
         </button>
       )}
 
@@ -306,6 +323,14 @@ export function PublicationCanvas({ pub, state, dispatch, fromList, quoteId, fin
             )}
           </div>
 
+          <div className="rail-card rail-card--ask">
+            <p className="rail-label">Обсудить</p>
+            <p className="rail-note">Задайте вопрос о статье в ПБЗ: ответ опирается на её текст, а вы остаётесь в этом же чате</p>
+            <button className="btn btn-primary rail-ask" onClick={() => dispatch({ t: 'open-pbz', pubId: pub.id })}>
+              <MessageSquare size={18} aria-hidden /> Спросить о статье в ПБЗ
+            </button>
+          </div>
+
           <div className="rail-card rail-card--src">
             <p className="rail-label">Источник</p>
             <dl className="src">
@@ -314,6 +339,15 @@ export function PublicationCanvas({ pub, state, dispatch, fromList, quoteId, fin
               {pub.pmid && <div><dt>PMID</dt><dd>{pub.pmid}</dd></div>}
               {pub.doi && <div><dt>DOI</dt><dd>{pub.doi}</dd></div>}
             </dl>
+            <div className="subs" role="group" aria-label="Подписка на первоисточник">
+              <p className="subs-h">
+                <Bell size={15} aria-hidden /> Подписаться на первоисточник
+              </p>
+              <SubRow kind="Журнал" name={pub.journal} on={state.subs.includes(`journal:${pub.journal}`)} onToggle={() => dispatch({ t: 'toggle-sub', key: `journal:${pub.journal}`, label: pub.journal })} />
+              {topic && (
+                <SubRow kind="Тема поиска" name={topic.title} on={state.subs.includes(`topic:${topic.id}`)} onToggle={() => dispatch({ t: 'toggle-sub', key: `topic:${topic.id}`, label: topic.title })} />
+              )}
+            </div>
             <div className="rail-links">
               <a className="link" href={pubmedUrl(pub.pmid ? `${pub.pmid}[pmid]` : `"${pub.title}"[Title]`)} target="_blank" rel="noopener noreferrer">
                 Открыть в PubMed <ExternalLink size={16} aria-hidden />

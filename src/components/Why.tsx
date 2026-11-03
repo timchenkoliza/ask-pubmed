@@ -1,16 +1,17 @@
 import { Info, X } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { Pub, Strategy } from '../data/types';
-import { STRATEGY_NAME, explain } from '../lib/why';
-import { FT_LABEL } from '../lib/fulltext';
+import type { Pub } from '../data/types';
+import { explain } from '../lib/why';
 import { useResultCtx } from './ResultContext';
 
-/* «Почему эта публикация здесь»: небольшая подсказка у карточки. Содержимое берётся из provenance записи. */
+/* «Почему в выдаче»: подсказка у карточки, но только когда есть что объяснять.
+   Публикация, подходящая под все условия, объяснений не требует. Отдельный знак нужен тем, что нашли иначе:
+   по синонимам или без части пожеланий. Сам ярлык «По широким терминам» и есть кнопка. Содержимое берётся из provenance записи. */
 
 const W = 340;
 
-export function WhyButton({ pub, title, compact }: { pub: Pub; title: string; compact?: boolean }) {
+export function WhyButton({ pub, title, compact, tag }: { pub: Pub; title: string; compact?: boolean; tag?: string }) {
   const ctx = useResultCtx();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number; sheet: boolean }>({ top: 0, left: 0, sheet: false });
@@ -62,24 +63,30 @@ export function WhyButton({ pub, title, compact }: { pub: Pub; title: string; co
     };
   }, [open, pos.sheet]);
 
-  if (!data) return null;
+  if (!data || data.tier === 'exact') return null;
 
   return (
     <>
       <button
         ref={btn}
         type="button"
-        className={`why-btn${compact ? ' why-btn--icon' : ''}`}
+        className={tag ? `tier-tag tier-tag--${data.tier} tier-tag--btn` : `why-btn${compact ? ' why-btn--icon' : ''}`}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={`Почему здесь: ${title}`}
+        aria-label={`${tag ?? 'Почему в выдаче'}: ${title}`}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
       >
-        <Info size={compact ? 18 : 16} aria-hidden />
-        {!compact && <span>Почему здесь</span>}
+        {tag ? (
+          <>
+            {tag}
+            <Info size={14} aria-hidden />
+          </>
+        ) : (
+          <Info size={compact ? 18 : 16} aria-hidden />
+        )}
       </button>
       {open &&
         createPortal(
@@ -87,13 +94,13 @@ export function WhyButton({ pub, title, compact }: { pub: Pub; title: string; co
             ref={pop}
             tabIndex={-1}
             role="dialog"
-            aria-label="Почему эта публикация здесь"
+            aria-label="Почему в выдаче"
             className={`why-pop${pos.sheet ? ' why-pop--sheet' : ''}`}
             style={pos.sheet ? undefined : { top: pos.top, left: pos.left, width: W }}
             data-tier={data.tier}
           >
             <div className="why-head">
-              <h2 className="why-title">Почему эта публикация здесь</h2>
+              <h2 className="why-title">Почему в выдаче</h2>
               <button
                 type="button"
                 className="icon-btn icon-btn--sm"
@@ -107,56 +114,30 @@ export function WhyButton({ pub, title, compact }: { pub: Pub; title: string; co
               </button>
             </div>
             <p className="why-lead">{data.headline}</p>
-            <dl className="why-list">
-              <div>
-                <dt>Нашли</dt>
-                <dd>
-                  {data.found.map((f, i) => (
-                    <span key={f.strategy} className={`why-tag why-tag--${f.strategy}`}>
-                      {STRATEGY_NAME[f.strategy as Strategy]}
-                      {f.rank ? `, №${f.rank}` : ''}
-                      {i < data.found.length - 1 ? '' : ''}
-                    </span>
-                  ))}
-                </dd>
-              </div>
-              {data.concepts.length > 0 && (
-                <div>
-                  <dt>Совпало с запросом</dt>
-                  <dd>
-                    <ul className="why-ul">
-                      {data.concepts.map((c) => (
-                        <li key={c.label}>
-                          {c.label} <span className="why-how">— {c.how}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </dd>
-                </div>
-              )}
-              {data.required.length > 0 && (
-                <div>
-                  <dt>Обязательные условия выполнены</dt>
-                  <dd>{data.required.join('; ')}</dd>
-                </div>
-              )}
-              {data.missed.length > 0 && (
-                <div>
-                  <dt>Желательное не выполнено</dt>
-                  <dd>{data.missed.join('; ')}</dd>
-                </div>
-              )}
-              <div>
-                <dt>Текст</dt>
-                <dd>{FT_LABEL[pub.fullTextState]}</dd>
-              </div>
-              {data.pmid && (
-                <div>
-                  <dt>PMID</dt>
-                  <dd>{data.pmid}</dd>
-                </div>
-              )}
-            </dl>
+            {(data.concepts.length > 0 || data.missed.length > 0) && (
+              <dl className="why-list">
+                {data.concepts.length > 0 && (
+                  <div>
+                    <dt>Совпало с запросом</dt>
+                    <dd>
+                      <ul className="why-ul">
+                        {data.concepts.map((c) => (
+                          <li key={c.label}>
+                            {c.label} <span className="why-how">— {c.how}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </dd>
+                  </div>
+                )}
+                {data.missed.length > 0 && (
+                  <div>
+                    <dt>Из пожеланий не нашли</dt>
+                    <dd>{data.missed.join('; ')}</dd>
+                  </div>
+                )}
+              </dl>
+            )}
           </div>,
           document.body,
         )}

@@ -3,6 +3,7 @@ import { ArrowLeft, Braces, Check, ChevronDown, Copy, ExternalLink, Lock, LockOp
 import { Dispatch, KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from 'react';
 import { pubmedUrl } from '../data/compile';
 import { kindOfConcept } from '../data/match';
+import { ZeroHelp } from './ZeroHelp';
 import { JOB_NAME } from '../data/router';
 import type { ConstraintKind, Concept, Params, Period, QueryVariants, Scenario, SearchResponse, StudyType } from '../data/types';
 import { Action, State, clearPriority, isLanding, setConceptActive, setFullTextKind, setPeriod, setPeriodKind, toggleConcept, toggleFullText, toggleHumans, toggleType } from '../state/machine';
@@ -141,6 +142,8 @@ export function Sheet({ open, layout, state, sc, params, response, dispatch }: P
   const gbs: Concept | undefined = params.concepts.find((c) => c.role === 'must');
   const typeLabel = (t: StudyType) => sc.typeLabels?.[t] ?? DEFAULT_TYPES[t];
   const total = response?.total ?? 0;
+  const zero = !!response && response.state === 'zero-results';
+  const meaning = sc.ambiguity && state.ambiguityId ? sc.ambiguity : null;
 
   const landing = isLanding(state.plan);
   const executed = response?.executed ?? [];
@@ -191,6 +194,12 @@ export function Sheet({ open, layout, state, sc, params, response, dispatch }: P
     </div>
   ) : (
     <>
+      {zero && !landing && response && (
+        <section className="sec sec--zero" aria-labelledby="zero-h">
+          <h3 className="sec-label" id="zero-h">Почему пусто</h3>
+          <ZeroHelp sc={sc} params={params} response={response} dispatch={dispatch} tone="light" />
+        </section>
+      )}
       <section className="sec">
         <h3 className="sec-label">Как поняли запрос</h3>
         <p className="sheet-job" data-job={state.plan?.job}>
@@ -232,6 +241,26 @@ export function Sheet({ open, layout, state, sc, params, response, dispatch }: P
             );
           })}
         </dl>
+        )}
+        {!landing && meaning && (
+          <div className="meaning">
+            <p className="meaning-h" id="meaning-h">Значение термина</p>
+            <div className="chips" role="radiogroup" aria-labelledby="meaning-h">
+              {meaning.options.map((o) => (
+                <button
+                  key={o.id}
+                  role="radio"
+                  aria-checked={state.ambiguityId === o.id}
+                  className="chip chip--light"
+                  title={o.hint}
+                  onClick={() => state.ambiguityId !== o.id && dispatch({ t: 'set-meaning', id: o.id })}
+                >
+                  {state.ambiguityId === o.id && <Check size={16} aria-hidden />} {o.label}
+                </button>
+              ))}
+            </div>
+            <p className="sheet-note">Выбрано при уточнении. Другое значение запустит поиск заново</p>
+          </div>
         )}
       </section>
 
@@ -313,6 +342,7 @@ export function Sheet({ open, layout, state, sc, params, response, dispatch }: P
             </button>
           ))}
         </div>
+        {params.types.length === 0 && <p className="sheet-note sheet-note--tight">Ничего не выбрано: ищем по любым типам исследований</p>}
         {params.preferTypes.length > 0 && (
           <p className="prio">
             <Kind kind="PREFERRED" /> В приоритете: {params.preferTypes.map((t) => lcFirst(typeLabel(t))).join(', ')}
@@ -397,7 +427,7 @@ export function Sheet({ open, layout, state, sc, params, response, dispatch }: P
       <div className="sheet-head" onPointerDown={(e) => mobile && drag.start(e)}>
         <div>
           <h2 className="sheet-title">Как искали</h2>
-          <p className="sheet-sub">Меняйте параметры — результаты обновятся</p>
+          <p className="sheet-sub">{zero && !landing ? 'Сейчас публикаций нет: ниже причина и что можно изменить' : 'Меняйте параметры — результаты обновятся'}</p>
         </div>
         <button className="icon-btn" aria-label="Закрыть" onClick={close} onPointerDown={(e) => e.stopPropagation()}>
           <X size={20} aria-hidden />
@@ -414,6 +444,10 @@ export function Sheet({ open, layout, state, sc, params, response, dispatch }: P
           ) : response?.relax ? (
             <button className="btn btn-primary" onClick={() => dispatch({ t: 'relax' })}>
               {response.relax.label}
+            </button>
+          ) : response?.alternatives[0] ? (
+            <button className="btn btn-primary" onClick={() => dispatch({ t: 'set-meaning', id: response.alternatives[0].id })}>
+              {response.alternatives[0].label}
             </button>
           ) : null
         )}

@@ -363,6 +363,10 @@ export interface SearchResponse {
   queries: QueryVariants;
   /** Что ослабить, если ничего не нашли. Только то, что проверено тестовым поиском. */
   relax: Relax | null;
+  /** Что именно привело к нулю: фильтр, их сочетание или значение понятия. Только то, что проверено тестовым поиском. */
+  blocker: Blocker | null;
+  /** Другие значения неоднозначного термина, при которых публикации есть (только при нуле). */
+  alternatives: Alternative[];
 
   state: ResultState;
   /** Какой вариант дал ведущие результаты. */
@@ -380,10 +384,20 @@ export interface SearchResponse {
   sort: SortMode;
 }
 
+/** Что именно ослабить: одно условие или все фильтры сразу. `count` — сколько публикаций нашёл тестовый поиск. */
 export type Relax =
-  | { kind: 'period'; label: string; to: Period }
-  | { kind: 'fulltext'; label: string }
-  | { kind: 'types'; label: string };
+  | { kind: 'period'; label: string; to: Period; count: number }
+  | { kind: 'fulltext'; label: string; count: number }
+  | { kind: 'types'; label: string; count: number }
+  | { kind: 'filters'; label: string; count: number };
+
+/** Причина нуля. `concept`: мешает значение понятия, фильтры не помогут ни по одному. */
+export type Blocker =
+  | { kind: 'concept'; id: string; label: string }
+  | { kind: 'period' | 'fulltext' | 'types'; id: 'period' | 'fulltext' | 'types'; label: string }
+  | { kind: 'filters'; id: 'filters'; label: string };
+
+export interface Alternative { id: string; label: string; hint: string; count: number }
 
 export interface SearchBackend {
   search(plan: SearchPlan): Promise<SearchResponse>;
