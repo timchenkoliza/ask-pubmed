@@ -119,7 +119,12 @@ export interface PubQuote {
   group: string;
 }
 
-export interface BodySection { title: string; text: string }
+export interface BodySection {
+  title: string;
+  text: string;
+  /** Перевод раздела на русский. Без него в режиме «Перевод» показываем оригинал и говорим об этом. */
+  textRu?: string;
+}
 
 export interface Pub {
   id: string;
@@ -147,6 +152,8 @@ export interface Pub {
   /** Текст статьи по разделам: есть только у публикаций с полным текстом в PMC. */
   body?: BodySection[];
   abstractRu?: string;
+  /** Перевод одного предложения-доказательства `fragment`: карточка в режиме «Перевод» переводится целиком. */
+  fragmentRu?: string;
   /** Идентификаторы. В локальных данных заполнены у нескольких публикаций номерами из зарезервированного диапазона,
       которых нет в PubMed (99 000 000 и выше), и тестовым префиксом DOI 10.5555. Из PubMed API приходят настоящие. */
   pmid?: string;

@@ -1,6 +1,7 @@
 import type { Params, Pub, Scenario, SearchResponse, Strategy } from '../data/types';
 import { TYPE_NAME, kindOfConcept, periodText } from '../data/match';
 import { FT_LONG } from './fulltext';
+import { lcFirst } from './typo';
 
 /* «Почему эта публикация здесь»: объяснение строится из происхождения записи (provenance), а не пишется заранее. */
 
@@ -20,7 +21,7 @@ export interface WhyData {
 const VIA: Record<string, string> = { mesh: 'рубрика MeSH', tiab: 'слова в названии или abstract', text: 'слова из запроса', flag: 'упомянуто в тексте' };
 
 export function labelOf(id: string, params: Params, sc: Scenario): string {
-  if (id === 'types') return `Тип исследования: ${params.types.map((t) => sc.typeLabels?.[t] ?? TYPE_NAME[t]).join(', ')}`;
+  if (id === 'types') return `Тип исследования: ${params.types.map((t) => lcFirst(sc.typeLabels?.[t] ?? TYPE_NAME[t])).join(', ')}`;
   if (id === 'prefer-types') return `В приоритете: ${params.preferTypes.map((t) => TYPE_NAME[t]).join(', ')}`;
   if (id === 'period') return params.period ? `Период: ${periodText(params.period)}` : 'Период';
   if (id === 'fulltext') return 'Полный текст';

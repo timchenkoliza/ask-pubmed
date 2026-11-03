@@ -56,6 +56,52 @@ export function MorphTitle({ text, lang, animated }: { text: string; lang: Lang 
   );
 }
 
+/** Слова одним куском, как в MorphTitle, но без анимации: нужен для невидимой «подложки», чтобы она переносилась так же, как видимый текст. */
+function StaticWords({ text }: { text: string }) {
+  const words = text.split(' ');
+  return (
+    <>
+      {words.map((w, i) => (
+        <span key={i}>
+          <span style={{ display: 'inline-block' }}>{w}</span>
+          {i < words.length - 1 ? ' ' : ''}
+        </span>
+      ))}
+    </>
+  );
+}
+
+/** Текст на двух языках в одной ячейке сетки. Видим один, второй невидим, но занимает место:
+    высоту задаёт более длинный вариант, поэтому перевод не меняет размер карточки и не двигает соседей. */
+export function BiText({ en, ru, lang, animated = true, quote = false }: { en: string; ru: string; lang: Lang | undefined; animated?: boolean; quote?: boolean }) {
+  const isRu = lang === 'ru';
+  const q = (open: boolean, inRu: boolean) =>
+    quote ? (
+      <span aria-hidden className="qmark">
+        {inRu ? (open ? '«' : '»') : open ? '“' : '”'}
+      </span>
+    ) : null;
+  return (
+    <span className="bi">
+      <span className="bi-ghost" aria-hidden lang="en">
+        {q(true, false)}
+        <StaticWords text={en} />
+        {q(false, false)}
+      </span>
+      <span className="bi-ghost" aria-hidden lang="ru">
+        {q(true, true)}
+        <StaticWords text={ru} />
+        {q(false, true)}
+      </span>
+      <span className="bi-live">
+        {q(true, isRu)}
+        <MorphTitle text={isRu ? ru : en} lang={lang} animated={animated} />
+        {q(false, isRu)}
+      </span>
+    </span>
+  );
+}
+
 /** Маленький переключатель EN / RU: по наведению раскрывается в пару, на сенсорных экранах всегда виден. */
 export function LangToggle({ lang, onToggle, label }: { lang: Lang | undefined; onToggle: () => void; label: string }) {
   const ru = lang === 'ru';
@@ -135,7 +181,7 @@ export function PubCard({ pub, lang, variant, dispatch, index, animateIn, moves,
       }}
       onTap={() => touch && open()}
     >
-      <MorphTitle text={text} lang={lang} animated />
+      {variant === 'compact' ? <MorphTitle text={text} lang={lang} animated /> : <BiText en={pub.title} ru={pub.titleRu} lang={lang} />}
     </Heading>
   );
 
@@ -200,7 +246,11 @@ export function PubCard({ pub, lang, variant, dispatch, index, animateIn, moves,
             ))}
           </p>
         )}
-        {lead && variant !== 'mini' && variant !== 'board' && <p className="card-frag">{lead}</p>}
+        {lead && variant !== 'mini' && variant !== 'board' && (
+          <p className="card-frag">
+            <BiText en={lead} ru={pub.fragmentRu ?? lead} lang={lang} />
+          </p>
+        )}
       </>
     );
 

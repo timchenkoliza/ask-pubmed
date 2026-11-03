@@ -192,7 +192,7 @@ export type Action =
   | { t: 'cycle-view' }
   | { t: 'settle' }
   | { t: 'pref-reset' }
-  | { t: 'open-pub'; id: string; quote?: string; scroll?: number }
+  | { t: 'open-pub'; id: string; quote?: string; scroll?: number; /** Язык, на котором врач читал фрагмент: статья откроется на нём же. */ lang?: Lang }
   | { t: 'close-pub' }
   | { t: 'sort'; sort: SortMode }
   | { t: 'toggle-sided' }
@@ -480,7 +480,14 @@ export function reducer(s: State, a: Action): State {
       return { ...s, prefs: emptyPrefs(), settled: '', toast: { text: 'Вид по умолчанию сброшен', n: (s.toast?.n ?? 0) + 1 } };
 
     case 'open-pub':
-      return { ...s, pub: { id: a.id, quote: a.quote }, returnScroll: a.scroll ?? s.returnScroll, sheetOpen: false, rawOpen: false };
+      return {
+        ...s,
+        pub: { id: a.id, quote: a.quote },
+        lang: a.lang ? { ...s.lang, [a.id]: a.lang } : s.lang,
+        returnScroll: a.scroll ?? s.returnScroll,
+        sheetOpen: false,
+        rawOpen: false,
+      };
     case 'close-pub':
       return leavePub(s);
 

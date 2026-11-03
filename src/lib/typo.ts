@@ -29,3 +29,12 @@ export const lastPeriod = (p: number): string => (p === 1 ? 'Последний 
 
 /** «за 1 год», «за 3 года», «за 5 лет». */
 export const withinPeriod = (p: number): string => (p === 1 ? 'за 1 год' : p < 5 ? `за ${p} года` : `за ${p} лет`);
+
+/** После двоеточия и в перечислениях слово пишем со строчной буквы: «Типы: систематические обзоры», а не «Типы: Систематические обзоры».
+    Аббревиатуры (РКИ, СИОЗС, GBS), слова с цифрами и латиницей (PubMed, MeSH, Abstract) не трогаем. */
+export function lcFirst(s: string): string {
+  const w = /^\S+/.exec(s)?.[0];
+  if (!w) return s;
+  if (/[A-ZА-ЯЁ]{2,}/.test(w) || /[0-9A-Za-z]/.test(w)) return s;
+  return w[0].toLowerCase() + s.slice(1);
+}

@@ -959,6 +959,19 @@ button:disabled {
   pointer-events: auto;
   touch-action: pan-y;
 }
+.bi {
+  display: grid;
+}
+.bi > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.bi-ghost {
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
 .card-ft {
   display: flex;
   align-items: center;
@@ -969,8 +982,6 @@ button:disabled {
 }
 .card-frag {
   margin: 0;
-  padding: 2px 0 2px 12px;
-  border-left: 2px solid var(--art-guideline-2);
   font: 400 14px/1.45 var(--sans);
   color: var(--text);
 }
@@ -1436,11 +1447,7 @@ button:disabled {
   color: var(--text);
   color-scheme: light;
   border-radius: var(--r-card);
-  border-left: 5px solid var(--accent);
   box-shadow: var(--shadow-subtle);
-}
-.qcard--abs {
-  border-left-color: var(--border);
 }
 .qcard-quote {
   margin: 0;
@@ -2760,16 +2767,10 @@ button:disabled {
   align-items: center;
   padding: 2px 8px;
   border-radius: 999px;
-  border: 1px solid var(--art-guideline-2);
-  background: var(--accent-wash);
-  color: var(--kind-req-fg);
+  background: var(--structural);
+  color: var(--text-2);
   font: 600 11px/1.4 var(--sans);
   white-space: nowrap;
-}
-.tier-tag--fallback {
-  border-color: #f2c9a5;
-  background: var(--tier-warm-bg);
-  color: var(--tier-warm-fg);
 }
 
 /* Выбор карточки в корпус для анализа */
@@ -3342,17 +3343,9 @@ button:disabled {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 2px 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 14px;
   background: var(--structural);
-  border: 1px solid var(--surface);
-  border-left: 3px solid var(--art-guideline-2);
-}
-.strat-row--broad {
-  border-left-color: var(--accent);
-}
-.strat-row--fallback {
-  border-left-color: #e08a4a;
 }
 .strat-name {
   font: 600 14px/1.35 var(--sans);
@@ -3368,8 +3361,7 @@ button:disabled {
   color: var(--text-2);
 }
 .strat-drop {
-  color: var(--tier-warm-fg);
-  font-weight: 600;
+  color: var(--text);
 }
 .strat-merge {
   margin: 10px 0 0;

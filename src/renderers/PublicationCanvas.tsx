@@ -17,13 +17,24 @@ interface Match { n: number; section: string; sectionKey: string; start: number;
 
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/** Поиск по русскому тексту учитывает окончания: «дефицит железа» находит и «дефицита железа». */
+function ruRegex(query: string): RegExp {
+  const parts = query.split(/\s+/).map((w) => {
+    if (!/^[а-яё]{5,}$/i.test(w)) return esc(w);
+    return `${esc(w.slice(0, w.length >= 7 ? -2 : -1))}[а-яё]*`;
+  });
+  return new RegExp(`(?<![а-яё])${parts.join('\\s+')}`, 'gi');
+}
+
+const enRegex = (query: string): RegExp => new RegExp(esc(query).replace(/\s+/g, '\\s+'), 'gi');
+
 function findAll(sections: Section[], q: string): Match[] {
   const query = q.trim();
   if (query.length < 2) return [];
-  const re = new RegExp(esc(query).replace(/\s+/g, '\\s+'), 'gi');
+  const cyr = /[а-яё]/i.test(query);
   const out: Match[] = [];
   for (const s of sections) {
-    re.lastIndex = 0;
+    const re = s.lang === 'ru' && cyr ? ruRegex(query) : enRegex(query);
     let m: RegExpExecArray | null;
     while ((m = re.exec(s.text))) {
       const a = Math.max(0, m.index - 48);
@@ -78,22 +89,34 @@ export function PublicationCanvas({ pub, state, dispatch, fromList, quoteId, fin
   const lang = state.lang[pub.id];
   const ru = lang === 'ru';
   const quote = quoteId ? pub.quotes?.find((q) => q.id === quoteId) : undefined;
-  const initial = quote?.text ?? find?.terms[0] ?? '';
-  const [q, setQ] = useState(initial);
+  /* Что подставлено в поиск само: цитата или термин задачи. Оригинал ищем по английскому тексту, перевод — по русскому. */
+  const auto = { en: quote?.text ?? find?.terms[0] ?? '', ru: quote?.textRu ?? find?.phrase ?? '' };
+  const autoFor = (isRu: boolean) => (isRu ? auto.ru || auto.en : auto.en);
+  const [q, setQ] = useState(() => autoFor(ru));
   const [active, setActive] = useState(0);
-  const body = bodyOf(pub);
+  const body = useMemo(() => bodyOf(pub), [pub]);
 
   useEffect(() => {
-    setQ(quote?.text ?? find?.terms[0] ?? '');
+    setQ(autoFor(ru));
     setActive(0);
   }, [pub.id, quote?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Врач переключил язык: подставленный нами запрос переводим вместе с текстом, набранный им самим не трогаем. */
+  const wasRu = useRef(ru);
+  useEffect(() => {
+    if (wasRu.current === ru) return;
+    const from = autoFor(wasRu.current);
+    wasRu.current = ru;
+    setQ((cur) => (cur === from ? autoFor(ru) : cur));
+    setActive(0);
+  }, [ru]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const canSearch = hasAbstract(pub);
   const inText = searchableText(pub);
 
   const sections: Section[] = useMemo(() => {
     const abs: Section = ru && pub.abstractRu ? { key: 'abs', title: 'Abstract', text: pub.abstractRu, lang: 'ru' } : { key: 'abs', title: 'Abstract', text: pub.abstract, lang: 'en' };
-    return [abs, ...(body ?? []).map((b, i) => ({ key: `b${i}`, title: b.title, text: b.text, lang: 'en' as const }))];
+    return [abs, ...(body ?? []).map((b, i): Section => (ru && b.textRu ? { key: `b${i}`, title: b.title, text: b.textRu, lang: 'ru' } : { key: `b${i}`, title: b.title, text: b.text, lang: 'en' }))];
   }, [ru, pub.abstract, pub.abstractRu, body]);
 
   const matches = useMemo(() => (canSearch ? findAll(sections, q) : []), [sections, q, canSearch]);
@@ -178,11 +201,11 @@ export function PublicationCanvas({ pub, state, dispatch, fromList, quoteId, fin
 
           {body ? (
             <>
-              {ru && <p className="rsec-note">Перевод полного текста пока недоступен, показан оригинал</p>}
+              {ru && body.some((b) => !b.textRu) && <p className="rsec-note">Перевод полного текста пока недоступен, показан оригинал</p>}
               {body.map((b, i) => (
                 <section className="rsec" key={b.title} aria-labelledby={`r-b${i}`}>
                   <h2 id={`r-b${i}`} className="rsec-h">{b.title}</h2>
-                  <p className="rsec-t" lang="en">
+                  <p className="rsec-t" lang={sections[i + 1].lang}>
                     <Marked s={sections[i + 1]} matches={matches} active={cur} />
                   </p>
                 </section>

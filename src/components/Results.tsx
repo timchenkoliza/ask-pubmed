@@ -8,7 +8,7 @@ import type { LayoutMode } from '../hooks';
 import { Action, State, intentOf, isLanding, viewOf } from '../state/machine';
 import { canShake } from '../lib/views';
 import { quoteBoard, splitComparison, topQuotedPub } from '../lib/groups';
-import { plural } from '../lib/typo';
+import { lcFirst, plural } from '../lib/typo';
 import { conceptsOf } from '../state/session';
 import { ClarificationCanvas } from '../renderers/ClarificationCanvas';
 import { ComparisonCanvas } from '../renderers/ComparisonCanvas';
@@ -74,7 +74,7 @@ const summaryFor = (intent: ResultIntent, sc: Scenario, original: boolean): stri
 /** Заголовок для запросов, которых нет среди готовых сценариев, собирается из понятий самого запроса. */
 function titleFor(intent: ResultIntent, sc: Scenario, params: Params, original: boolean): string {
   if (original) return sc.titles?.[intent] ?? sc.title;
-  const core = conceptsOf(params).filter((c) => c.kind === 'REQUIRED').map((c) => c.label);
+  const core = conceptsOf(params).filter((c) => c.kind === 'REQUIRED').map((c) => lcFirst(c.label));
   if (intent === 'synthesis') return `Корпус для анализа: ${core.join(', ')}`;
   if (intent === 'compare') return sc.titles?.compare ?? sc.title;
   return core.length ? `Публикации: ${core.join(', ')}` : sc.title;

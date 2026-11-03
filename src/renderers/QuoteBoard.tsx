@@ -1,35 +1,32 @@
 import { motion } from 'framer-motion';
 import { FileText } from 'lucide-react';
-import { FtIcon, LangToggle, MorphTitle } from '../components/Card';
+import { BiText, FtIcon, LangToggle } from '../components/Card';
 import { noQuoteReason } from '../lib/fulltext';
 import type { Pub, PubQuote } from '../data/types';
 import { QuoteCardData, quoteBoard } from '../lib/groups';
 import { plural } from '../lib/typo';
+import type { Lang } from '../state/machine';
 import { RenderProps } from './shared';
 
 /* Цитаты: главным объектом становится точный фрагмент, а не карточка статьи.
    Фрагменты собраны по исходам; рядом с каждым видно, откуда он: из abstract или из полного текста. */
 
-const open = (q: PubQuote, pub: Pub) => ({ t: 'open-pub' as const, id: pub.id, quote: q.id });
+const open = (q: PubQuote, pub: Pub, lang: Lang | undefined) => ({ t: 'open-pub' as const, id: pub.id, quote: q.id, lang });
 
 function QuoteCard({ data, state, dispatch, animateIn, i }: { data: QuoteCardData; i: number; animateIn: boolean } & Pick<RenderProps, 'state' | 'dispatch'>) {
   const { quote: q, pub } = data;
   const key = `q:${q.id}`;
   const lang = state.lang[key];
-  const ru = lang === 'ru';
-  const text = ru ? q.textRu : q.text;
   const fromAbstract = q.source === 'abstract';
   return (
     <motion.article
-      className={`qcard${fromAbstract ? ' qcard--abs' : ''}`}
+      className="qcard"
       initial={animateIn ? { opacity: 0, y: 18 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(i, 8) * 0.05, type: 'spring', stiffness: 200, damping: 24 }}
     >
-      <p className="qcard-quote" lang={ru ? 'ru' : 'en'}>
-        <span aria-hidden className="qmark">{ru ? '«' : '“'}</span>
-        <MorphTitle text={text} lang={lang} animated />
-        <span aria-hidden className="qmark">{ru ? '»' : '”'}</span>
+      <p className="qcard-quote">
+        <BiText en={q.text} ru={q.textRu} lang={lang} quote />
       </p>
       <div className="qcard-src">
         <span className={`src-tag ${fromAbstract ? 'src-tag--abs' : 'src-tag--ft'}`}>
@@ -38,12 +35,13 @@ function QuoteCard({ data, state, dispatch, animateIn, i }: { data: QuoteCardDat
         <LangToggle lang={lang} onToggle={() => dispatch({ t: 'toggle-lang', id: key })} label="Цитата" />
       </div>
       <p className="qcard-art">
-        <b>{ru ? pub.titleRu : pub.title}</b>
+        <b>
+          <BiText en={pub.title} ru={pub.titleRu} lang={lang} />
+        </b>
         <span>{pub.journal}, {pub.year}</span>
-        <span>Фрагмент {data.index} из {data.of} в этой статье</span>
       </p>
       <div className="qcard-act">
-        <button className="btn btn-ghost-light btn-sm" onClick={() => dispatch(open(q, pub))}>
+        <button className="btn btn-ghost-light btn-sm" onClick={() => dispatch(open(q, pub, lang))}>
           {fromAbstract ? 'Открыть в abstract' : 'Открыть в тексте'}
         </button>
       </div>

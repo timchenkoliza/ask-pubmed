@@ -8,7 +8,7 @@ import type { ConstraintKind, Concept, Params, Period, QueryVariants, Scenario, 
 import { Action, State, clearPriority, isLanding, setConceptActive, setFullTextKind, setPeriod, setPeriodKind, toggleConcept, toggleFullText, toggleHumans, toggleType } from '../state/machine';
 import { TYPE_NAME } from '../data/match';
 import { copyText, useEscape, LayoutMode } from '../hooks';
-import { periodLabel, plural } from '../lib/typo';
+import { lcFirst, periodLabel, plural } from '../lib/typo';
 
 /* «Как искали»: уровень 2 (параметры) и уровень 3 («Запрос PubMed»). */
 
@@ -196,7 +196,7 @@ export function Sheet({ open, layout, state, sc, params, response, dispatch }: P
         <p className="sheet-job" data-job={state.plan?.job}>
           <b>{JOB_NAME[state.plan?.job ?? 'literature-search']}</b>
           {landing && state.plan?.known ? <> · {state.plan.known.value}</> : null}
-          {state.ambiguityId ? <> · значение уточнено: {facts.find((c) => c.id === sc.ambiguity?.conceptId)?.label}</> : null}
+          {state.ambiguityId ? <> · значение уточнено: {lcFirst(facts.find((c) => c.id === sc.ambiguity?.conceptId)?.label ?? '')}</> : null}
         </p>
         {landing ? (
           <p className="sheet-note">Публикацию нашли по идентификатору, тематический поиск не запускали. Условия запроса к ней не применяются</p>
@@ -315,7 +315,7 @@ export function Sheet({ open, layout, state, sc, params, response, dispatch }: P
         </div>
         {params.preferTypes.length > 0 && (
           <p className="prio">
-            <Kind kind="PREFERRED" /> В приоритете: {params.preferTypes.map((t) => typeLabel(t)).join(', ')}
+            <Kind kind="PREFERRED" /> В приоритете: {params.preferTypes.map((t) => lcFirst(typeLabel(t))).join(', ')}
             <button className="link-btn" onClick={() => edit(clearPriority(), 'priority', 'prefer-types')}>
               Убрать приоритет
             </button>
@@ -358,7 +358,7 @@ export function Sheet({ open, layout, state, sc, params, response, dispatch }: P
                   <span className="strat-name">{v.label}</span>
                   <span className="strat-n">{e.count}</span>
                   <span className="strat-hint">{v.hint}</span>
-                  {e.dropped.length > 0 && <span className="strat-drop">Сняли: {e.dropped.map((d) => d.label).join(', ')}</span>}
+                  {e.dropped.length > 0 && <span className="strat-drop">Сняли: {e.dropped.map((d) => (d.id === 'prefer-types' ? `${d.label.replace(/^В приоритете:\s*/, '')} в приоритете` : lcFirst(d.label))).join(', ')}</span>}
                 </li>
               );
             })}

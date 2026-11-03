@@ -1,3 +1,4 @@
+import { TRANSLATIONS, lastSentence } from './translations';
 import type { Concept, FullTextState, Params, Pub, Scenario, ScenarioId, StudyType } from './types';
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -29,7 +30,12 @@ function P(
   seq += 1;
   const fullTextState: FullTextState = fullText === true ? 'pmc-full-text' : fullText === false ? 'abstract-only' : fullText;
   /* У каждой публикации есть PMID из вымышленного диапазона 991xxxxx: передача в Deep Research и «Почему здесь» работают с настоящими полями. */
-  return { id: `demo-${seq}`, pmid: `991${String(seq).padStart(5, '0')}`, demo: true, title, titleRu, journal, year, type, fullTextState, fragment, abstract, mesh, ...extra };
+  /* Перевод abstract и предложения-доказательства: из `extra`, затем из таблицы переводов. Если предложение-доказательство
+     — последнее предложение abstract, его перевод — последнее предложение перевода abstract. */
+  const tr = TRANSLATIONS[title];
+  const abstractRu = extra.abstractRu ?? tr?.abstract;
+  const fragmentRu = extra.fragmentRu ?? tr?.fragment ?? (fragment && abstractRu && abstract.endsWith(fragment) ? lastSentence(abstractRu) : undefined);
+  return { id: `demo-${seq}`, pmid: `991${String(seq).padStart(5, '0')}`, demo: true, title, titleRu, journal, year, type, fullTextState, fragment, abstract, mesh, ...extra, abstractRu, fragmentRu };
 }
 
 function C(c: Omit<Concept, 'active'> & { active?: boolean }): Concept {
@@ -361,10 +367,10 @@ const ob: Scenario = {
           { id: 'q-0b', text: 'Definitions of congenital malformation differed between studies, which limits direct comparison.', textRu: 'Определения врождённого порока различались между исследованиями, что ограничивает прямое сравнение.', section: 'Обсуждение', source: 'fulltext', group: 'malf' },
         ],
         body: [
-          { title: 'Введение', text: 'Selective serotonin reuptake inhibitors are used to treat depression and anxiety during pregnancy. Clinicians and patients need to know which outcomes were studied in newborns and how they were recorded.' },
-          { title: 'Методы', text: 'We searched bibliographic databases for studies of antenatal exposure to selective serotonin reuptake inhibitors. Two reviewers screened records and extracted the outcomes reported for the newborn.' },
-          { title: 'Результаты', text: 'Neonatal complications were reported separately from congenital malformations in all included studies. Exposure was described by trimester in most reports.' },
-          { title: 'Обсуждение', text: 'Definitions of congenital malformation differed between studies, which limits direct comparison. Future work should report outcomes in a common format.' },
+          { title: 'Введение', text: 'Selective serotonin reuptake inhibitors are used to treat depression and anxiety during pregnancy. Clinicians and patients need to know which outcomes were studied in newborns and how they were recorded.', textRu: 'Селективные ингибиторы обратного захвата серотонина применяют для лечения депрессии и тревоги во время беременности. Врачам и пациенткам важно знать, какие исходы у новорождённых изучали и как их регистрировали.' },
+          { title: 'Методы', text: 'We searched bibliographic databases for studies of antenatal exposure to selective serotonin reuptake inhibitors. Two reviewers screened records and extracted the outcomes reported for the newborn.', textRu: 'Мы искали в библиографических базах исследования антенатального воздействия селективных ингибиторов обратного захвата серотонина. Два рецензента отбирали записи и извлекали исходы, о которых сообщали для новорождённого.' },
+          { title: 'Результаты', text: 'Neonatal complications were reported separately from congenital malformations in all included studies. Exposure was described by trimester in most reports.', textRu: 'Во всех включённых исследованиях неонатальные осложнения указывали отдельно от врождённых пороков. В большинстве работ воздействие описывали по триместрам.' },
+          { title: 'Обсуждение', text: 'Definitions of congenital malformation differed between studies, which limits direct comparison. Future work should report outcomes in a common format.', textRu: 'Определения врождённого порока различались между исследованиями, что ограничивает прямое сравнение. В дальнейших работах исходы стоит описывать в едином формате.' },
         ],
       }),
     P('ma', 2024, true,
@@ -384,10 +390,10 @@ const ob: Scenario = {
           { id: 'q-1b', text: 'Exposure in the first trimester was analysed separately from later exposure.', textRu: 'Воздействие в первом триместре анализировали отдельно от более позднего.', section: 'Обсуждение', source: 'fulltext', group: 'malf' },
         ],
         body: [
-          { title: 'Введение', text: 'Congenital malformations are among the outcomes most often examined after exposure to medicines in pregnancy. This meta-analysis collects studies that reported them after exposure to SSRIs.' },
-          { title: 'Методы', text: 'We pooled studies that reported congenital malformations after SSRI exposure in pregnancy. The timing of exposure was extracted from each study.' },
-          { title: 'Результаты', text: 'Malformations were reported by organ system and by the timing of exposure. The number of studies reporting each organ system varied.' },
-          { title: 'Обсуждение', text: 'Exposure in the first trimester was analysed separately from later exposure. Differences in how malformations were classified should be kept in mind when reading pooled estimates.' },
+          { title: 'Введение', text: 'Congenital malformations are among the outcomes most often examined after exposure to medicines in pregnancy. This meta-analysis collects studies that reported them after exposure to SSRIs.', textRu: 'Врождённые пороки — один из исходов, которые чаще всего изучают после приёма лекарств при беременности. В этом метаанализе собраны исследования, где о них сообщали после воздействия СИОЗС.' },
+          { title: 'Методы', text: 'We pooled studies that reported congenital malformations after SSRI exposure in pregnancy. The timing of exposure was extracted from each study.', textRu: 'Мы объединили исследования, в которых сообщали о врождённых пороках после воздействия СИОЗС при беременности. Срок воздействия извлекали из каждого исследования.' },
+          { title: 'Результаты', text: 'Malformations were reported by organ system and by the timing of exposure. The number of studies reporting each organ system varied.', textRu: 'О пороках сообщали по системам органов и по срокам воздействия. Число исследований, где описана каждая система органов, различалось.' },
+          { title: 'Обсуждение', text: 'Exposure in the first trimester was analysed separately from later exposure. Differences in how malformations were classified should be kept in mind when reading pooled estimates.', textRu: 'Воздействие в первом триместре анализировали отдельно от более позднего. Различия в классификации пороков стоит учитывать при чтении объединённых оценок.' },
         ],
       }),
     P('cohort', 2024, false,
@@ -429,10 +435,10 @@ const ob: Scenario = {
           { id: 'q-4a', text: 'The included studies recorded neonatal adaptation symptoms in different ways.', textRu: 'Во включённых исследованиях симптомы неонатальной адаптации регистрировали по-разному.', section: 'Результаты', source: 'fulltext', group: 'adapt' },
         ],
         body: [
-          { title: 'Введение', text: 'Newborns exposed to SSRIs late in pregnancy are observed for a period after birth. Reports describe this period under several names.' },
-          { title: 'Методы', text: 'A meta-analysis of SSRI exposure in late pregnancy and neonatal adaptation. Timing of exposure was extracted from each included study.' },
-          { title: 'Результаты', text: 'The included studies recorded neonatal adaptation symptoms in different ways. Some reported individual symptoms, others reported a combined outcome.' },
-          { title: 'Обсуждение', text: 'A common definition of neonatal adaptation would make future comparisons easier.' },
+          { title: 'Введение', text: 'Newborns exposed to SSRIs late in pregnancy are observed for a period after birth. Reports describe this period under several names.', textRu: 'За новорождёнными, которые получали СИОЗС в конце беременности, наблюдают некоторое время после рождения. В работах этот период называют по-разному.' },
+          { title: 'Методы', text: 'A meta-analysis of SSRI exposure in late pregnancy and neonatal adaptation. Timing of exposure was extracted from each included study.', textRu: 'Метаанализ воздействия СИОЗС в конце беременности и неонатальной адаптации. Срок воздействия извлекали из каждого включённого исследования.' },
+          { title: 'Результаты', text: 'The included studies recorded neonatal adaptation symptoms in different ways. Some reported individual symptoms, others reported a combined outcome.', textRu: 'Во включённых исследованиях симптомы неонатальной адаптации регистрировали по-разному. В одних работах сообщали об отдельных симптомах, в других — об объединённом исходе.' },
+          { title: 'Обсуждение', text: 'A common definition of neonatal adaptation would make future comparisons easier.', textRu: 'Единое определение неонатальной адаптации облегчило бы будущие сравнения.' },
         ],
       }),
     P('cohort', 2022, true,
@@ -450,10 +456,10 @@ const ob: Scenario = {
           { id: 'q-5b', text: 'Neonatal complications were recorded during the first 28 days after birth.', textRu: 'Неонатальные осложнения регистрировали в течение первых 28 дней после рождения.', section: 'Результаты', source: 'fulltext', group: 'compl' },
         ],
         body: [
-          { title: 'Введение', text: 'Population registers make it possible to follow many pregnancies and their newborns over time.' },
-          { title: 'Методы', text: 'Pregnancies exposed to SSRIs were identified from prescription records. Neonatal outcomes were compared with those of unexposed pregnancies.' },
-          { title: 'Результаты', text: 'Neonatal complications were recorded during the first 28 days after birth. Outcomes were reported for exposed and unexposed groups side by side.' },
-          { title: 'Обсуждение', text: 'The authors discuss how prescription records may differ from actual use during pregnancy.' },
+          { title: 'Введение', text: 'Population registers make it possible to follow many pregnancies and their newborns over time.', textRu: 'Популяционные регистры позволяют проследить за множеством беременностей и их новорождёнными во времени.' },
+          { title: 'Методы', text: 'Pregnancies exposed to SSRIs were identified from prescription records. Neonatal outcomes were compared with those of unexposed pregnancies.', textRu: 'Беременности с воздействием СИОЗС выявляли по записям о назначениях. Неонатальные исходы сравнивали с исходами беременностей без воздействия.' },
+          { title: 'Результаты', text: 'Neonatal complications were recorded during the first 28 days after birth. Outcomes were reported for exposed and unexposed groups side by side.', textRu: 'Неонатальные осложнения регистрировали в течение первых 28 дней после рождения. Исходы приводили для групп с воздействием и без него рядом.' },
+          { title: 'Обсуждение', text: 'The authors discuss how prescription records may differ from actual use during pregnancy.', textRu: 'Авторы обсуждают, чем записи о назначениях могут отличаться от фактического приёма во время беременности.' },
         ],
       }),
     P('sr', 2022, false,

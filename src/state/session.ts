@@ -1,5 +1,6 @@
 import type { ConstraintKind, DeepResearchPayload, Params, Pub, Scenario, SearchResponse, SearchSession } from '../data/types';
 import { TYPE_NAME, kindOfConcept, periodText } from '../data/match';
+import { lcFirst } from '../lib/typo';
 import type { State } from './machine';
 import { intentOf, viewOf } from './machine';
 
@@ -18,7 +19,7 @@ export function conceptsOf(params: Params): Item[] {
 /** Условия, которые не являются понятиями: типы, приоритет, период, полный текст. */
 export function constraintsOf(params: Params, sc: Scenario): Item[] {
   const out: Item[] = [];
-  const names = (list: typeof params.types) => list.map((t) => sc.typeLabels?.[t] ?? TYPE_NAME[t]).join(', ');
+  const names = (list: typeof params.types) => list.map((t) => lcFirst(sc.typeLabels?.[t] ?? TYPE_NAME[t])).join(', ');
   if (params.types.length && params.types.length < 4) out.push({ id: 'types', label: `Типы: ${names(params.types)}`, kind: 'REQUIRED' });
   if (params.preferTypes.length) out.push({ id: 'prefer-types', label: `В приоритете: ${names(params.preferTypes)}`, kind: 'PREFERRED' });
   if (params.period !== null) out.push({ id: 'period', label: `Публикации ${periodText(params.period)}`, kind: params.periodKind });
